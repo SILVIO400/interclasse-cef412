@@ -1,0 +1,3661 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JOGOS INTERCLASSE CEF 412 - 2026</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-card {
+        border: 1px solid #cbd5e1 !important;
+        page-break-inside: avoid;
+        margin-bottom: 1.5rem;
+        padding: 1.5rem !important;
+        background: white !important;
+        color: black !important;
+        border-radius: 1rem !important;
+        box-shadow: none !important;
+      }
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- MODAL DE ALERTA DE REGRAS (SEM ALERT BROWSER) -->
+  <div id="alert-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center z-[100] p-4 hidden">
+    <div class="bg-slate-900 border-2 border-amber-500 p-6 rounded-3xl max-w-md w-full text-center space-y-4 shadow-2xl">
+      <div class="mx-auto bg-amber-500/10 text-amber-500 p-3 rounded-full w-14 h-14 flex items-center justify-center">
+        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+      </div>
+      <h3 id="alert-title" class="text-lg font-black text-slate-100">Alerta</h3>
+      <p id="alert-message" class="text-xs text-slate-400 leading-relaxed font-semibold">Mensagem informativa.</p>
+      <button onclick="window.closeAlertModal()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-2.5 rounded-xl text-xs uppercase tracking-wider">
+        Ok, Entendido
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIRMAÇÃO DE AÇÃO -->
+  <div id="confirm-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center z-[110] p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-sm w-full text-center space-y-4 shadow-2xl">
+      <div class="mx-auto bg-indigo-500/10 text-indigo-400 p-3 rounded-full w-12 h-12 flex items-center justify-center">
+        <i class="fa-solid fa-circle-question text-xl"></i>
+      </div>
+      <h3 id="confirm-title" class="text-base font-bold text-slate-100">Confirmação</h3>
+      <p id="confirm-message" class="text-xs text-slate-400 leading-relaxed">Você deseja prosseguir com esta ação?</p>
+      <div class="flex gap-3">
+        <button onclick="window.closeConfirmModal()" class="flex-1 bg-slate-950 hover:bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-400 font-bold">
+          Cancelar
+        </button>
+        <button id="confirm-btn-action" class="flex-1 bg-indigo-600 hover:bg-indigo-500 p-2.5 rounded-xl text-xs text-white font-bold">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICAÇÃO -->
+  <div id="toast" class="fixed bottom-4 right-4 bg-indigo-600 border border-indigo-400 text-white font-bold text-xs py-3 px-5 rounded-2xl z-50 shadow-xl hidden flex items-center gap-2">
+    <span class="w-2 h-2 bg-emerald-400 rounded-full animate-ping"></span>
+    <span id="toast-text">Mensagem</span>
+  </div>
+
+  <!-- HEADER PRINCIPAL -->
+  <header class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-40 flex justify-between items-center no-print">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-md">
+        <i class="fa-solid fa-school text-lg"></i>
+      </div>
+      <div>
+        <h1 id="header-title" class="text-sm sm:text-base font-black text-amber-400 tracking-tight flex items-center gap-2">
+          JOGOS INTERCLASSE CEF 412 - 2026
+          <span id="live-indicator-badge"></span>
+        </h1>
+        <p id="header-subtitle" class="text-[9px] sm:text-[10px] text-slate-400 font-medium">Campeonato Escolar de Cultura Corporal</p>
+      </div>
+    </div>
+
+    <!-- Sessão de Usuário -->
+    <div class="flex gap-2">
+      <div id="session-container" class="text-xs"></div>
+    </div>
+  </header>
+
+  <!-- SELETOR DE TURNO -->
+  <div class="bg-slate-950 p-3 flex justify-center gap-3 border-b border-slate-900 no-print">
+    <button onclick="window.setShift('matutino')" id="shift-btn-matutino" class="px-4 sm:px-6 py-2 rounded-xl font-bold text-xs flex items-center gap-2 border transition-all">
+      <i class="fa-solid fa-sun text-amber-400"></i> Matutino (8º e 9º Anos)
+    </button>
+    <button onclick="window.setShift('vespertino')" id="shift-btn-vespertino" class="px-4 sm:px-6 py-2 rounded-xl font-bold text-xs flex items-center gap-2 border transition-all">
+      <i class="fa-solid fa-moon text-orange-400"></i> Vespertino (6º e 7º Anos)
+    </button>
+  </div>
+
+  <!-- BARRA DE NAVEGAÇÃO -->
+  <nav class="bg-slate-900 border-b border-slate-800 flex overflow-x-auto no-print">
+    <div id="nav-tabs-container" class="flex w-full min-w-max"></div>
+  </nav>
+
+  <!-- CONTEÚDO DINÂMICO -->
+  <main id="main-content" class="max-w-7xl mx-auto p-4 sm:p-6 w-full flex-1"></main>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-900/40 border-t border-slate-900/60 p-4 text-center text-[10px] text-slate-500 no-print">
+    &copy; 2026 - Portal Interativo CEF 412. Coisas boas acontecem aqui.
+  </footer>
+
+  <!-- MODAL DE LOGIN -->
+  <div id="login-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-sm space-y-4 relative shadow-2xl text-left">
+      <button onclick="window.closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <h3 class="font-black text-sm text-slate-200 text-center uppercase tracking-wider">Acesso Restrito ao Painel</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Nome de Usuário</label>
+          <input type="text" id="login-username" placeholder="Insira seu login..." class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Código de Acesso (Senha)</label>
+          <input type="password" id="login-passcode" placeholder="Insira seu código..." class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:outline-none">
+        </div>
+        <button onclick="window.submitLogin()" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-black py-2.5 rounded-xl text-xs uppercase transition-colors">Conectar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL REGULAMENTO GERAL DOS JOGOS (EDITÁVEL PARA ADMIN) -->
+  <div id="rules-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-2xl space-y-4 relative shadow-2xl text-left">
+      <button onclick="window.closeRulesModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+        <i class="fa-solid fa-gavel text-amber-500 text-lg"></i>
+        <h3 id="rules-modal-title" class="font-black text-base text-slate-200 uppercase tracking-wide">Regulamento Oficial</h3>
+      </div>
+      <div class="space-y-4">
+        <div id="rules-admin-edit-zone" class="hidden space-y-3 bg-slate-950/60 p-4 rounded-2xl border border-indigo-500/20">
+          <span class="text-[10px] text-indigo-400 uppercase font-black block">Modo de Edição Administrativa</span>
+          <div>
+            <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Título Regulamento</label>
+            <input type="text" id="rules-modal-input-title" class="w-full bg-slate-900 border border-slate-800 p-2 rounded-xl text-xs text-slate-200 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Conteúdo do Regulamento</label>
+            <textarea id="rules-modal-input-text" rows="8" class="w-full bg-slate-900 border border-slate-800 p-2.5 text-slate-200 text-xs focus:outline-none rounded-xl font-mono"></textarea>
+          </div>
+          <button onclick="window.saveRulesFromModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-xl text-xs font-bold text-white shadow">
+            Confirmar Alterações Regulamentares
+          </button>
+        </div>
+        <div id="rules-modal-preview-zone" class="max-h-96 overflow-y-auto bg-slate-950/50 p-4 rounded-2xl border border-slate-800">
+          <p id="rules-modal-text" class="text-xs text-slate-300 whitespace-pre-line leading-relaxed"></p>
+        </div>
+      </div>
+      <div class="flex justify-end pt-2">
+        <button onclick="window.closeRulesModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl text-slate-300">Fechar Regulamento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CADASTRO/EDIÇÃO DE TURMA -->
+  <div id="turma-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 hidden no-print">
+    <form id="turma-form" onsubmit="window.saveTurma(event)" class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-sm space-y-4 shadow-2xl text-left">
+      <input type="hidden" id="turma-form-id">
+      <h3 id="turma-modal-title" class="font-bold text-xs uppercase text-slate-300 border-b border-slate-800 pb-2">Nova Turma / Sala de Aula</h3>
+      
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Nome da Sala</label>
+          <input type="text" id="turma-form-name" placeholder="Ex: 8º Ano A" required class="w-full bg-slate-950 p-2.5 rounded-xl text-xs border border-slate-800 text-slate-200 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">País Representado</label>
+            <input type="text" id="turma-form-country" placeholder="Ex: Brasil" required oninput="window.updateModalFlagPreview(this.value)" class="w-full bg-slate-950 p-2.5 rounded-xl text-xs border border-slate-800 text-slate-200 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Bandeira Oficial</label>
+            <div class="flex items-center justify-center h-[38px] bg-slate-950 border border-slate-800 rounded-xl" id="turma-flag-preview-container">
+              <span id="turma-flag-preview" class="text-xs text-slate-400">🏳️</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Série / Ano Letivo</label>
+          <select id="turma-form-grade" class="w-full bg-slate-900 p-2.5 rounded-xl text-xs border border-slate-800 text-slate-200 focus:outline-none">
+            <!-- Populado via JS -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Professor Conselheiro</label>
+          <input type="text" id="turma-form-advisor" placeholder="Nome do Professor" required class="w-full bg-slate-950 p-2.5 rounded-xl text-xs border border-slate-800 text-slate-200 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Cor Temática</label>
+          <select id="turma-form-color" class="w-full bg-slate-900 p-2.5 rounded-xl text-xs border border-slate-800 text-slate-200 focus:outline-none">
+            <option value="indigo">Azul Indigo</option>
+            <option value="emerald">Verde Esmeralda</option>
+            <option value="amber">Laranja Amber</option>
+            <option value="rose">Rosa Choque</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="window.closeTurmaModal()" class="flex-1 py-2 bg-slate-950 text-xs text-slate-400 rounded-xl">Cancelar</button>
+        <button type="submit" class="flex-1 bg-indigo-600 py-2 rounded-xl text-xs font-bold text-white shadow-md">Confirmar Sala</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- MODAL DE CADASTRO/EDIÇÃO DE MODALIDADE -->
+  <div id="modalidade-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 hidden no-print">
+    <form id="modalidade-form" onsubmit="window.saveModalidade(event)" class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl text-left">
+      <input type="hidden" id="modalidade-form-id">
+      <h3 id="modalidade-modal-title" class="font-bold text-slate-100 border-b border-slate-800 pb-2">Nova Categoria de Esporte</h3>
+
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Nome do Esporte</label>
+            <input type="text" id="modalidade-form-name" required placeholder="Ex: Futsal" oninput="window.autoSuggestEmoji(this.value)" class="w-full bg-slate-950 border border-slate-800 p-2 rounded-xl text-xs focus:outline-none text-slate-200">
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Ícone / Emoji</label>
+            <input type="text" id="modalidade-form-icon" required placeholder="Ex: ⚽" class="w-full bg-slate-950 border border-slate-800 p-2 rounded-xl text-xs text-center focus:outline-none text-slate-200">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Métricas de Súmula (Separadas por vírgula)</label>
+          <input type="text" id="modalidade-form-metrics" placeholder="Ex: Gols, Faltas, Cartão Amarelo" class="w-full bg-slate-950 border border-slate-800 p-2 rounded-xl text-xs focus:outline-none text-slate-200">
+          <span class="text-[9px] text-slate-500 block mt-1">Estatísticas que os mesários registrarão neste esporte.</span>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Gênero Exclusivo</label>
+          <select id="modalidade-form-gender" class="w-full bg-slate-950 border border-slate-800 p-2 rounded-xl text-xs focus:outline-none text-slate-200">
+            <option value="M">Masculino (M)</option>
+            <option value="F">Feminino (F)</option>
+            <option value="Misto">Misto (M/F Combinado)</option>
+            <option value="Geral">Livre / Sem Restrições</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-4 gap-2">
+          <div>
+            <label class="block text-[9px] text-slate-400 font-bold mb-1">Mín Atletas</label>
+            <input type="number" id="modalidade-form-min" required class="w-full bg-slate-900 border border-slate-800 p-1.5 rounded-lg text-xs text-center focus:outline-none text-slate-200" value="5">
+          </div>
+          <div>
+            <label class="block text-[9px] text-slate-400 font-bold mb-1">Máx Atletas</label>
+            <input type="number" id="modalidade-form-max" required class="w-full bg-slate-900 border border-slate-800 p-1.5 rounded-lg text-xs text-center focus:outline-none text-slate-200" value="12">
+          </div>
+          <div>
+            <label class="block text-[9px] text-slate-400 font-bold mb-1" title="Mínimo de meninos">Mínimo de meninos</label>
+            <input type="number" id="modalidade-form-min-m" required class="w-full bg-slate-900 border border-slate-800 p-1.5 rounded-lg text-xs text-center focus:outline-none text-slate-200" value="0">
+          </div>
+          <div>
+            <label class="block text-[9px] text-slate-400 font-bold mb-1" title="Mínimo de meninas">Mínimo de meninas</label>
+            <input type="number" id="modalidade-form-min-f" required class="w-full bg-slate-900 border border-slate-800 p-1.5 rounded-lg text-xs text-center focus:outline-none text-slate-200" value="0">
+          </div>
+        </div>
+
+        <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 space-y-2">
+          <span class="text-[10px] uppercase font-black text-indigo-400 block mb-1">Pontuação de Classificação</span>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[9px] text-slate-400 font-bold">🥇 Campeão</label>
+              <input type="number" id="modalidade-form-p-gold" required class="w-full bg-slate-900 border border-slate-800 p-1.5 rounded-lg text-xs text-center focus:outline-none text-slate-200" value="10">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-400 font-bold">🥈 Vice</label>
+              <input type="number" id="modalidade-form-p-silver" required class="w-full bg-slate-900 border border-slate-800 p-1.5 rounded-lg text-xs text-center focus:outline-none text-slate-200" value="7">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-400 font-bold">🥉 3º Lugar</label>
+              <input type="number" id="modalidade-form-p-bronze" required class="w-full bg-slate-900 border border-slate-800 p-1.5 rounded-lg text-xs text-center focus:outline-none text-slate-200" value="5">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-400 font-bold">Participação</label>
+              <input type="number" id="modalidade-form-p-part" required class="w-full bg-slate-900 border border-slate-800 p-1.5 rounded-lg text-xs text-center focus:outline-none text-slate-200" value="2">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Sistema de Disputa</label>
+          <select id="modalidade-form-system" class="w-full bg-slate-950 border border-slate-800 p-2 rounded-xl text-xs focus:outline-none text-slate-200">
+            <option value="mata_mata">Mata-Mata (Eliminação Simples)</option>
+            <option value="double_elimination">Chave de Dupla Eliminação (Mata-Mata com Repescagem)</option>
+            <option value="grupo_unico">Grupo Único (Pontos Corridos)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Tempo de Jogo</label>
+          <input type="text" id="modalidade-form-duration" required placeholder="Ex: 2 tempos de 15 min" class="w-full bg-slate-950 border border-slate-800 p-2 rounded-xl text-xs focus:outline-none text-slate-200">
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Regulamento Interno</label>
+          <textarea id="modalidade-form-rules" rows="2" class="w-full bg-slate-950 border border-slate-800 p-2 text-slate-100 text-xs focus:outline-none text-slate-200"></textarea>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2 border-t border-slate-800">
+        <button type="button" onclick="window.closeModalidadeModal()" class="flex-1 py-2 bg-slate-950 text-xs text-slate-400 rounded-xl">Cancelar</button>
+        <button type="submit" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 font-bold text-xs rounded-xl text-white transition-colors">Confirmar Esporte</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- MODAL DE CADASTRO/EDIÇÃO DE ALUNOS -->
+  <div id="student-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 hidden no-print">
+    <form id="student-form" onsubmit="window.saveStudent(event)" class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-sm space-y-4 text-left shadow-2xl">
+      <input type="hidden" id="student-form-id">
+      <h3 id="student-modal-title" class="font-extrabold text-sm text-slate-200 uppercase tracking-wide border-b border-slate-800 pb-2">Novo Atleta</h3>
+      
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Nome Completo</label>
+          <input type="text" id="student-form-name" placeholder="Nome do Estudante" required class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Gênero Biológico</label>
+          <select id="student-form-gender" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:outline-none">
+            <option value="M">Masculino (M)</option>
+            <option value="F">Feminino (F)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Turma do Estudante</label>
+          <select id="student-form-class" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:outline-none">
+            <!-- Populado via JS -->
+          </select>
+        </div>
+      </div>
+
+      <div class="pt-3 flex gap-2 border-t border-slate-800">
+        <button type="button" onclick="window.closeStudentModal()" class="flex-1 py-2 bg-slate-950 text-slate-400 text-xs font-bold rounded-xl">Cancelar</button>
+        <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md">Salvar Atleta</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- MODAL DE CONTROLE DE RESULTADOS E PLACAR -->
+  <div id="match-modal" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 hidden no-print">
+    <form id="match-form" onsubmit="window.saveMatchScore(event)" class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-left">
+      <input type="hidden" id="match-form-id">
+      <h3 class="text-base font-black text-slate-100">Resultado do Jogo</h3>
+
+      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+        <span class="text-[10px] font-bold text-indigo-400 uppercase block tracking-wider text-center">Gols / Pontos Registrados</span>
+        <div class="flex items-center justify-center gap-4">
+          <div class="text-center">
+            <span id="match-form-team1-label" class="text-xs text-slate-400 block mb-1 truncate max-w-[100px]">Time 1</span>
+            <input type="number" id="match-form-score1" min="0" required class="w-16 h-12 bg-slate-900 border border-slate-800 text-slate-100 text-center text-xl font-bold rounded-xl focus:outline-none focus:border-indigo-500">
+          </div>
+          <span class="text-slate-600 font-black text-xl">-</span>
+          <div class="text-center">
+            <span id="match-form-team2-label" class="text-xs text-slate-400 block mb-1 truncate max-w-[100px]">Time 2</span>
+            <input type="number" id="match-form-score2" min="0" required class="w-16 h-12 bg-slate-900 border border-slate-800 text-slate-100 text-center text-xl font-bold rounded-xl focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+      </div>
+
+      <!-- CRITÉRIO DE DESEMPATE PARA JOGOS ELIMINATÓRIOS -->
+      <div id="match-form-tie-container" class="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl space-y-2 hidden">
+        <span class="text-[10px] font-black text-amber-500 uppercase flex items-center gap-1">
+          <i class="fa-solid fa-triangle-exclamation"></i> Empate Eliminatório obriga vencedor técnico
+        </span>
+        <label class="block text-[9px] text-slate-400">Declarar vencedor pelo critério técnico (Pênaltis/Vantagem):</label>
+        <select id="match-form-tie-winner" class="w-full bg-slate-950 p-2 rounded-xl text-xs text-slate-100 focus:outline-none border border-slate-800 font-bold">
+          <!-- Populado via JS -->
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Progresso / Status</label>
+        <div class="flex gap-2">
+          <button type="button" id="match-status-btn-scheduled" onclick="window.setMatchFormStatus('scheduled')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-slate-950 text-slate-500">
+            Agendado
+          </button>
+          <button type="button" id="match-status-btn-finished" onclick="window.setMatchFormStatus('finished')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-slate-950 text-slate-500">
+            Finalizado
+          </button>
+        </div>
+        <input type="hidden" id="match-form-status-val" value="scheduled">
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold mb-1">Data</label>
+          <input type="date" id="match-form-date" class="w-full px-3 py-1.5 bg-slate-950 text-slate-100 rounded-lg text-xs border border-slate-800 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold mb-1">Horário</label>
+          <input type="time" id="match-form-time" class="w-full px-3 py-1.5 bg-slate-950 text-slate-100 rounded-lg text-xs border border-slate-800 focus:outline-none">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-[10px] text-slate-400 font-bold mb-1">Local da Partida</label>
+        <input type="text" id="match-form-location" placeholder="Ex: Quadra Central" class="w-full px-3 py-1.5 bg-slate-950 text-slate-100 rounded-lg text-xs border border-slate-800 focus:outline-none">
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex gap-2">
+        <button type="button" onclick="window.closeMatchModal()" class="flex-1 py-2 bg-slate-950 text-xs text-slate-400 rounded-xl">Cancelar</button>
+        <button type="submit" class="flex-1 py-2 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-lg">Salvar Placar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- SÚMULA TÉCNICA E ARBITRAGEM -->
+  <div id="sumula-modal" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 overflow-y-auto hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-5 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-left">
+        <div>
+          <h4 class="font-black text-sm text-slate-200">Súmula de Arbitragem — Mesa Técnica</h4>
+          <p id="sumula-modal-subtitle" class="text-[11px] text-indigo-400 uppercase font-bold">AÇÃO</p>
+        </div>
+        <button onclick="window.closeSumulaModal()"><i class="fa-solid fa-xmark text-lg text-slate-400 hover:text-white"></i></button>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-950/20" id="sumula-modal-body">
+        <!-- Populado via JS -->
+      </div>
+
+      <div class="p-4 bg-slate-950 border-t border-slate-800 text-right flex justify-end gap-2" id="sumula-modal-footer">
+        <!-- Botão Fechar -->
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAVE DO CAMINHO DA COMPETIÇÃO SIMÉTRICA -->
+  <div id="bracket-modal" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-7xl w-full p-6 space-y-4 max-h-[95vh] overflow-y-auto relative shadow-2xl">
+      <button onclick="window.closeBracketModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white no-print">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-3 gap-3 text-left">
+        <div class="flex items-center gap-3">
+          <span id="bracket-modal-sport-icon" class="text-3xl bg-slate-900 p-2 rounded-2xl border border-slate-800">🏆</span>
+          <div>
+            <h3 id="bracket-modal-sport-title" class="font-extrabold text-base text-slate-100">Modalidade</h3>
+            <span class="text-xs text-indigo-400 font-bold uppercase">Caminho da Competição Real-Time</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 mr-6 no-print">
+          <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-500 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all text-white shadow">
+            <i class="fa-solid fa-print"></i> Imprimir Chave
+          </button>
+        </div>
+      </div>
+      
+      <!-- Filtros Laterais da Chave -->
+      <div id="bracket-view-selector-container" class="flex flex-wrap gap-2 border-b border-slate-800/60 pb-3 no-print"></div>
+
+      <!-- Renderizador do Torneio -->
+      <div id="bracket-modal-render-container" class="space-y-4"></div>
+      
+      <button onclick="window.closeBracketModal()" class="w-full bg-slate-800 py-2.5 text-xs font-bold rounded-xl hover:bg-slate-700 no-print">
+        Fechar Caminho do Torneio
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL DE MEDALHISTAS -->
+  <div id="award-modal" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 overflow-y-auto hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl p-6 space-y-6 max-h-[90vh] overflow-y-auto relative shadow-2xl">
+      
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3 no-print">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-trophy text-amber-400"></i>
+          <h3 class="font-extrabold text-base text-slate-100">Medalhistas Interclasse CEF 412</h3>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-500 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all text-white shadow-lg">
+            <i class="fa-solid fa-print"></i> Imprimir Medalhas
+          </button>
+          <button onclick="window.closeAwardModal()" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="award-modal-print-content" class="space-y-6"></div>
+
+      <div class="border-t border-slate-800 pt-3 flex justify-end gap-2 no-print">
+        <button type="button" onclick="window.closeAwardModal()" class="px-5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-300">
+          Fechar Relatório
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CADASTRO/EDIÇÃO DE PERFIL DE USUÁRIO -->
+  <div id="user-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 hidden no-print">
+    <form id="user-form" onsubmit="window.saveUser(event)" class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-sm space-y-4 shadow-2xl text-left">
+      <input type="hidden" id="user-form-id">
+      <h3 id="user-modal-title" class="font-bold text-slate-100 border-b border-slate-800 pb-2">Novo Perfil de Usuário</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Nome Completo</label>
+          <input type="text" id="user-form-name" required placeholder="Ex: Coordenação Geral" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs focus:outline-none text-slate-200">
+        </div>
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Nome de Usuário (Login)</label>
+          <input type="text" id="user-form-username" required placeholder="Ex: coord_geral" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs focus:outline-none text-slate-200">
+        </div>
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Código de Acesso (Senha)</label>
+          <input type="password" id="user-form-passcode" required placeholder="Ex: coord412" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs focus:outline-none text-slate-200">
+        </div>
+        <div>
+          <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">Função / Nível de Acesso</label>
+          <select id="user-form-role" class="w-full bg-slate-950 border border-slate-800 p-2 rounded-xl text-xs focus:outline-none text-slate-200">
+            <option value="admin">Administrador Geral (Admin)</option>
+            <option value="admin2">Admin 2 (Auxiliar / Coordenador)</option>
+            <option value="professor">Professor de Turma</option>
+            <option value="mesario">Mesário de Arbitragem</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2 border-t border-slate-800">
+        <button type="button" onclick="window.closeUserModal()" class="flex-1 py-2 bg-slate-950 text-xs text-slate-400 rounded-xl">Cancelar</button>
+        <button type="submit" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 font-bold text-xs rounded-xl text-white transition-colors">Confirmar Perfil</button>
+      </div>
+    </form>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Mapeamentos e Valores Iniciais
+    const COUNTRY_MAP = {
+      'argentina': 'ar', 'australia': 'au', 'africa do sul': 'za', 'algeria': 'dz',
+      'arabia saudita': 'sa', 'austria': 'at', 'belgica': 'be', 'bosnia e herzegovina': 'ba', 'brasil': 'br',
+      'cabo verde': 'cv', 'canada': 'ca', 'catar': 'qa', 'colombia': 'co', 'coreia do sul': 'kr',
+      'costa do marfim': 'ci', 'croacia': 'hr', 'curacao': 'cw', 'egito': 'eg', 'equador': 'ec',
+      'escocia': 'gb-sct', 'espanha': 'es', 'estados unidos': 'us', 'eua': 'us', 'franca': 'fr', 'gana': 'gh',
+      'haiti': 'ht', 'holanda': 'nl', 'inglaterra': 'gb-eng', 'ira': 'ir', 'iraque': 'iq', 'japao': 'jp',
+      'jordania': 'jo', 'marrocos': 'ma', 'mexico': 'mx', 'noruega': 'no', 'nova zelandia': 'nz',
+      'panama': 'pa', 'paraguai': 'py', 'portugal': 'pt', 'republica rd congo': 'cd', 'republica tcheca': 'cz',
+      'senegal': 'sn', 'suecia': 'se', 'suica': 'ch', 'tunisia': 'tn', 'turquia': 'tr', 'uruguai': 'uy',
+      'uzbequistao': 'uz', 'alemanha': 'de'
+    };
+
+    const DEFAULT_SEED = {
+      turmas: [
+        { id: 't1-mat', name: '8º Ano A', advisor: 'Prof. Marcos Souza', color: 'indigo', shift: 'matutino', grade: '8', country: 'Brasil' },
+        { id: 't2-mat', name: '8º Ano B', advisor: 'Profa. Regina Duarte', color: 'indigo', shift: 'matutino', grade: '8', country: 'Alemanha' },
+        { id: 't3-mat', name: '9º Ano A', advisor: 'Prof. Carlos Alberto', color: 'rose', shift: 'matutino', grade: '9', country: 'França' },
+        { id: 't4-mat', name: '9º Ano B', advisor: 'Profa. Sandra Lima', color: 'rose', shift: 'matutino', grade: '9', country: 'Argentina' },
+        { id: 't1-vesp', name: '6º Ano A', advisor: 'Prof. Roberto Costa', color: 'emerald', shift: 'vespertino', grade: '6', country: 'Portugal' },
+        { id: 't2-vesp', name: '6º Ano B', advisor: 'Profa. Cláudia Reis', color: 'emerald', shift: 'vespertino', grade: '6', country: 'Espanha' },
+        { id: 't3-vesp', name: '7º Ano A', advisor: 'Prof. André Silva', color: 'amber', shift: 'vespertino', grade: '7', country: 'Uruguai' },
+        { id: 't4-vesp', name: '7º Ano B', advisor: 'Profa. Marcia Lima', color: 'amber', shift: 'vespertino', grade: '7', country: 'Japão' }
+      ],
+      alunos: [
+        { id: 'std-1', name: 'Carlos Henrique', gender: 'M', classId: 't1-mat', shift: 'matutino', sports: ['futsal-masc'] },
+        { id: 'std-1b', name: 'Guilherme Silva', gender: 'M', classId: 't1-mat', shift: 'matutino', sports: ['futsal-masc'] },
+        { id: 'std-1c', name: 'Lucas Souza', gender: 'M', classId: 't1-mat', shift: 'matutino', sports: ['futsal-masc'] },
+        { id: 'std-1d', name: 'Arthur Ramos', gender: 'M', classId: 't1-mat', shift: 'matutino', sports: ['futsal-masc'] },
+        { id: 'std-1e', name: 'Felipe Costa', gender: 'M', classId: 't1-mat', shift: 'matutino', sports: ['futsal-masc'] },
+        { id: 'std-2', name: 'Beatriz Costa', gender: 'F', classId: 't1-mat', shift: 'matutino', sports: ['volei-misto'] },
+        { id: 'std-3', name: 'Mariana Silva', gender: 'F', classId: 't3-mat', shift: 'matutino', sports: ['volei-misto'] },
+        { id: 'std-4', name: 'Danilo Ramos', gender: 'M', classId: 't2-mat', shift: 'matutino', sports: ['futsal-masc'] },
+        { id: 'std-4b', name: 'Gabriel Santos', gender: 'M', classId: 't2-mat', shift: 'matutino', sports: ['futsal-masc'] },
+        { id: 'std-4c', name: 'Matheus Pereira', gender: 'M', classId: 't2-mat', shift: 'matutino', sports: ['futsal-masc'] },
+        { id: 'std-4d', name: 'Pedro Henrique', gender: 'M', classId: 't2-mat', shift: 'matutino', sports: ['futsal-masc'] },
+        { id: 'std-4e', name: 'Thiago Oliveira', gender: 'M', classId: 't2-mat', shift: 'matutino', sports: ['futsal-masc'] }
+      ],
+      modalidades: [
+        { id: 'futsal-masc', name: 'Futsal Masculino', icon: '⚽', gender: 'M', minPlayers: 2, maxPlayers: 12, minPlayersM: 2, minPlayersF: 0, system: 'mata_mata', shift: 'matutino', duration: '2 tempos de 15 min', rulesText: 'Chave Simétrica de Mata-Mata Simples por Eliminação Direta.', pointsGold: 10, pointsSilver: 7, pointsBronze: 5, pointsParticipation: 2, metrics: ['Gols', 'Faltas', 'Cartão Amarelo', 'Cartão Vermelho'] },
+        { id: 'volei-misto', name: 'Vôlei Misto', icon: '🏐', gender: 'Misto', minPlayers: 4, maxPlayers: 10, minPlayersM: 2, minPlayersF: 2, system: 'grupo_unico', shift: 'matutino', duration: 'Melhor de 3 sets', rulesText: 'Pontos Corridos. Todas jogam contra todas.', pointsGold: 10, pointsSilver: 7, pointsBronze: 5, pointsParticipation: 2, metrics: ['Pontos', 'Bloqueios', 'Erros'] }
+      ],
+      confrontos: [],
+      configuracoes: {
+        titlePortal: 'Arena Interativa CEF 412',
+        subtitlePortal: 'Campeonato Escolar de Cultura Corporal',
+        welcomeTitle: 'Jogos Interclasse CEF 412 - 2026',
+        welcomeSubtitle: 'Coisas boas acontecem aqui!',
+        maxSportsPerStudent: 2,
+        pointsGold: 10,
+        pointsSilver: 7,
+        pointsBronze: 5,
+        pointsParticipation: 2,
+        matchMetrics: ['Faltas', 'Cartão Amarelo', 'Cartão Vermelho'],
+        rulesTitle: 'Regulamento Geral dos Jogos',
+        rulesText: '1. Respeito mútuo entre todos os participantes.\n2. É obrigatório o uso de calçados apropriados para quadra.\n3. Presença confirmada em súmula do mesário.',
+        firebaseConfig: { 
+          apiKey: 'AIzaSyCFhdTCSa8qCcqXJ94Pb4lg8JUdJ1jSpgA', 
+          databaseURL: 'https://interclasse-cef412---2026-default-rtdb.firebaseio.com', 
+          projectId: 'interclasse-cef412---2026' 
+        }
+      },
+      usuarios: [
+        { id: 'usr-admin', username: 'admin', role: 'admin', name: 'Administrador Geral', passcode: 'admin123', permissions: ['edit_config', 'edit_teams', 'edit_students', 'edit_matches', 'edit_attendance'], isDefault: true },
+        { id: 'usr-admin2', username: 'admin2', role: 'admin2', name: 'Coordenador Técnico', passcode: 'admin123', permissions: ['edit_teams', 'edit_students', 'edit_matches'], isDefault: true },
+        { id: 'usr-prof', username: 'professor', role: 'professor', name: 'Professor de Turma', passcode: 'professor123', permissions: ['edit_students'], isDefault: true }
+      ],
+      menuVisibility: { home: true, jogos: true, placar: true, turmas: true, inscricoes: true }
+    };
+
+    let state = { ...DEFAULT_SEED };
+    let activeShift = 'matutino';
+    let activeTab = 'home';
+    let currentUser = null;
+    let activeBracketSportId = null;
+    let activeBracketWing = 'all'; 
+
+    let currentFilters = {
+      sport: 'all',
+      class: 'all',
+      status: 'all',
+      studentClass: 'all',
+      studentSearch: ''
+    };
+
+    let db = null;
+    let auth = null;
+    let appId = typeof __app_id !== 'undefined' ? __app_id : 'portal-cef412-default-id';
+    let isCloudSyncActive = false;
+
+    async function initApp() {
+      const localData = localStorage.getItem('arena_cef412_state_v4');
+      if (localData) {
+        try {
+          state = JSON.parse(localData);
+          if (!state.menuVisibility) state.menuVisibility = { ...DEFAULT_SEED.menuVisibility };
+          if (!state.configuracoes) state.configuracoes = { ...DEFAULT_SEED.configuracoes };
+          if (!state.configuracoes.firebaseConfig || !state.configuracoes.firebaseConfig.apiKey) {
+            state.configuracoes.firebaseConfig = { ...DEFAULT_SEED.configuracoes.firebaseConfig };
+          }
+          if (!state.confrontos) state.confrontos = [];
+          if (!state.usuarios || state.usuarios.length === 0) state.usuarios = [ ...DEFAULT_SEED.usuarios ];
+        } catch (e) {
+          state = { ...DEFAULT_SEED };
+        }
+      }
+
+      await setupFirebaseSync();
+      
+      autoResolveAllWOs();
+      renderHeaderSession();
+      renderMenuTabs();
+      renderActiveTab();
+    }
+
+    async function setupFirebaseSync() {
+      try {
+        let config = {
+          apiKey: 'AIzaSyCFhdTCSa8qCcqXJ94Pb4lg8JUdJ1jSpgA', 
+          databaseURL: 'https://interclasse-cef412---2026-default-rtdb.firebaseio.com', 
+          projectId: 'interclasse-cef412---2026'
+        };
+        
+        if (state.configuracoes && state.configuracoes.firebaseConfig && state.configuracoes.firebaseConfig.apiKey) {
+          config = state.configuracoes.firebaseConfig;
+        } else if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+          config = JSON.parse(__firebase_config);
+        }
+
+        if (config && config.apiKey) {
+          const app = initializeApp(config);
+          auth = getAuth(app);
+          db = getFirestore(app);
+
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+
+          onAuthStateChanged(auth, (user) => {
+            if (user) {
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'globalState', 'state-document');
+              
+              onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                  const cloudData = docSnap.data();
+                  if (cloudData && cloudData.lastUpdatedBy !== user.uid) {
+                    state = cloudData.stateData;
+                    localStorage.setItem('arena_cef412_state_v4', JSON.stringify(state));
+                    
+                    renderHeaderSession();
+                    renderMenuTabs();
+                    renderActiveTab();
+                    
+                    if (activeBracketSportId) {
+                      openBracketModal(activeBracketSportId);
+                    }
+                    showToast("Sincronizado com a nuvem!");
+                  }
+                } else {
+                  if (currentUser) {
+                    saveState();
+                  }
+                }
+              }, (error) => {
+                console.error("Erro na escuta ativa do Firestore:", error);
+              });
+
+              isCloudSyncActive = true;
+              renderCloudBadge(true);
+            }
+          });
+        } else {
+          renderCloudBadge(false);
+        }
+      } catch (err) {
+        console.error("Falha ao configurar sincronizador Firebase:", err);
+        renderCloudBadge(false);
+      }
+    }
+
+    function renderCloudBadge(active) {
+      const badge = document.getElementById('live-indicator-badge');
+      if (badge) {
+        if (active) {
+          badge.innerHTML = `
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span class="w-1.5 h-1.5 mr-1 bg-emerald-400 rounded-full animate-ping"></span>
+              Ao Vivo
+            </span>
+          `;
+        } else {
+          badge.innerHTML = `
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-500 border border-slate-700">
+              Local Offline
+            </span>
+          `;
+        }
+      }
+    }
+
+    async function saveState() {
+      localStorage.setItem('arena_cef412_state_v4', JSON.stringify(state));
+      renderMenuTabs();
+      renderActiveTab();
+      
+      if (activeBracketSportId) {
+        openBracketModal(activeBracketSportId);
+      }
+
+      if (isCloudSyncActive && db && auth.currentUser && currentUser) {
+        try {
+          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'globalState', 'state-document');
+          await setDoc(docRef, {
+            stateData: state,
+            lastUpdatedBy: auth.currentUser.uid,
+            updatedAt: new Date().toISOString()
+          });
+        } catch (e) {
+          console.error("Erro ao transcrever estado para nuvem:", e);
+        }
+      }
+    }
+
+    async function saveFirebaseCredentials() {
+      const apiKey = document.getElementById('fb-api-key').value.trim();
+      const projectId = document.getElementById('fb-project-id').value.trim();
+      const databaseURL = document.getElementById('fb-database-url').value.trim();
+
+      if (!apiKey || !projectId) {
+        openAlertModal("Credenciais Inválidas", "Por favor, preencha a API Key e o Project ID para conectar.");
+        return;
+      }
+
+      if (!state.configuracoes) state.configuracoes = {};
+      state.configuracoes.firebaseConfig = { apiKey, projectId, databaseURL };
+
+      saveState();
+      showToast("Credenciais salvas! Conectando...");
+      await setupFirebaseSync();
+    }
+
+    // --- FUNÇÕES DE AUXÍLIO ---
+    function normalizeString(str) {
+      if (!str) return '';
+      return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    }
+
+    // --- PAÍSES ---
+    function getCountryCode(countryName) {
+      const norm = normalizeString(countryName);
+      return COUNTRY_MAP[norm] || null;
+    }
+
+    function getCountryFlagHTML(countryName) {
+      if (!countryName || countryName.startsWith('🏳️') || countryName.startsWith('Vencedor') || countryName.startsWith('Perdedor') || countryName.startsWith('Campeão')) return '';
+      const code = getCountryCode(countryName);
+      if (code) {
+        return `<img class="w-5 h-3.5 object-cover inline-block align-middle mr-1.5 rounded-sm shadow-sm" src="https://flagcdn.com/w40/${code}.png" onerror="this.style.display='none'">`;
+      }
+      return '🏳️';
+    }
+
+    function getAutoEmoji(sportName) {
+      const norm = sportName.toLowerCase();
+      if (norm.includes('futsal') || norm.includes('futebol')) return '⚽';
+      if (norm.includes('volei') || norm.includes('vôlei')) return '🏐';
+      if (norm.includes('queimada')) return '🤾';
+      if (norm.includes('basquete')) return '🏀';
+      if (norm.includes('tenis') || norm.includes('tênis')) return '🎾';
+      if (norm.includes('xadrez')) return '♟️';
+      if (norm.includes('dama')) return '🏁';
+      return '🏆';
+    }
+
+    // --- SISTEMA DE SESSÃO / LOGIN ---
+    function renderHeaderSession() {
+      const container = document.getElementById('session-container');
+      if (!container) return;
+
+      if (currentUser) {
+        container.innerHTML = `
+          <div class="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-2xl">
+            <i class="fa-solid fa-circle-user text-amber-400"></i>
+            <span class="font-bold text-slate-200 hidden sm:inline">${currentUser.name}</span>
+            <button onclick="window.handleLogout()" class="text-slate-400 hover:text-rose-400 ml-1" title="Sair">
+              <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <button onclick="window.openLoginModal()" class="bg-indigo-600 hover:bg-indigo-550 font-extrabold px-3 py-1.5 rounded-xl text-[11px] flex items-center gap-1.5 transition-colors shadow-lg text-white">
+            <i class="fa-solid fa-lock"></i> Área Staff
+          </button>
+        `;
+      }
+    }
+
+    function handleLogout() {
+      currentUser = null;
+      renderHeaderSession();
+      renderMenuTabs();
+      switchTab('home');
+      showToast("Sessão encerrada.");
+    }
+
+    function submitLogin() {
+      const userField = document.getElementById('login-username').value.trim();
+      const codeField = document.getElementById('login-passcode').value.trim();
+
+      const found = state.usuarios.find(u => u.username === userField && u.passcode === codeField);
+      if (found) {
+        currentUser = found;
+        closeLoginModal();
+        renderHeaderSession();
+        renderMenuTabs();
+        renderActiveTab();
+        showToast(`Bem-vindo(a), ${found.name}!`);
+      } else {
+        openAlertModal("Acesso Negado", "Nome de usuário ou senha incorretos.");
+      }
+    }
+
+    // --- NAVEGAÇÃO / MENUS ---
+    function renderMenuTabs() {
+      const container = document.getElementById('nav-tabs-container');
+      if (!container) return;
+
+      const tabs = [
+        { id: 'home', label: 'Início', icon: 'fa-house' },
+        { id: 'jogos', label: 'Jogos & Súmulas', icon: 'fa-clock' },
+        { id: 'placar', label: 'Placar de Medalhas', icon: 'fa-trophy' },
+        { id: 'turmas', label: 'Turmas & Relações', icon: 'fa-users' },
+        { id: 'inscricoes', label: 'Inscrições (Professor)', icon: 'fa-file-signature' }
+      ];
+
+      let html = '';
+      tabs.forEach(tab => {
+        const isVisible = state.menuVisibility[tab.id] !== false;
+        const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'admin2');
+        const isMesario = currentUser && currentUser.role === 'mesario';
+        
+        let showTab = isVisible;
+        if (isAdmin) showTab = true; 
+        if (isMesario && tab.id === 'jogos') showTab = true;
+
+        if (showTab) {
+          const isActive = activeTab === tab.id;
+          html += `
+            <button onclick="window.switchTab('${tab.id}')" class="flex-1 py-3 px-2 text-center font-black text-[10px] sm:text-[11px] flex flex-col items-center gap-1 border-b-2 transition-all ${isActive ? 'border-amber-400 text-amber-400 bg-slate-900/40' : 'border-transparent text-slate-400 hover:text-slate-300'}">
+              <i class="fa-solid ${tab.icon} text-sm sm:text-base"></i>
+              <span>${tab.label}</span>
+            </button>
+          `;
+        }
+      });
+
+      container.innerHTML = html;
+    }
+
+    function switchTab(tabId) {
+      activeTab = tabId;
+      renderMenuTabs();
+      renderActiveTab();
+    }
+
+    function setShift(shift) {
+      activeShift = shift;
+      document.getElementById('shift-btn-matutino').className = shift === 'matutino' 
+        ? "px-4 sm:px-6 py-2 rounded-xl font-bold text-xs flex items-center gap-2 border bg-indigo-600/10 border-indigo-500 text-indigo-400 transition-all" 
+        : "px-4 sm:px-6 py-2 rounded-xl font-bold text-xs flex items-center gap-2 border bg-slate-900 border-slate-800 text-slate-500 transition-all";
+
+      document.getElementById('shift-btn-vespertino').className = shift === 'vespertino' 
+        ? "px-4 sm:px-6 py-2 rounded-xl font-bold text-xs flex items-center gap-2 border bg-amber-600/10 border-amber-500 text-amber-400 transition-all" 
+        : "px-4 sm:px-6 py-2 rounded-xl font-bold text-xs flex items-center gap-2 border bg-slate-900 border-slate-800 text-slate-500 transition-all";
+
+      renderMenuTabs();
+      renderActiveTab();
+    }
+
+    function toggleMenuVisibility(tabId, isChecked) {
+      if (!state.menuVisibility) state.menuVisibility = {};
+      state.menuVisibility[tabId] = isChecked;
+      saveState();
+      renderMenuTabs();
+      showToast("Estrutura de menus atualizada!");
+    }
+
+    function renderActiveTab() {
+      const main = document.getElementById('main-content');
+      if (!main) return;
+
+      const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'admin2');
+      const isProf = currentUser && currentUser.role === 'professor';
+
+      if (activeTab === 'home') {
+        let adminPanelHTML = '';
+        let firebaseCardHTML = '';
+        let userManagementHTML = '';
+
+        if (isAdmin) {
+          adminPanelHTML = `
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-4 text-left shadow-xl mb-6">
+              <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <h4 class="text-xs font-black uppercase text-indigo-400 flex items-center gap-1.5">
+                  <i class="fa-solid fa-gears"></i> Painel de Configurações Administrativas
+                </h4>
+                <div class="flex gap-2">
+                  <button onclick="window.openModalidadeModal()" class="bg-indigo-600 hover:bg-indigo-500 font-extrabold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 text-white shadow">
+                    <i class="fa-solid fa-plus"></i> Novo Esporte
+                  </button>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Título do Portal</label>
+                  <input type="text" id="cfg-portal-title" class="w-full bg-slate-950 border border-slate-800 p-2 rounded-xl text-xs text-slate-200 focus:outline-none font-semibold" oninput="window.saveConfigField('titlePortal', this.value)">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Subtítulo do Portal</label>
+                  <input type="text" id="cfg-portal-sub" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:outline-none" oninput="window.saveConfigField('subtitlePortal', this.value)">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Máx Esportes por Aluno</label>
+                  <input type="number" id="cfg-portal-max-sports" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:outline-none font-bold" oninput="window.saveConfigField('maxSportsPerStudent', Number(this.value))">
+                </div>
+              </div>
+
+              <!-- Edição Direta do Regulamento -->
+              <div class="bg-slate-950/40 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <span class="text-[10px] uppercase font-black text-amber-500 block">📝 Editar Regulamento Oficial</span>
+                <div class="grid grid-cols-1 gap-2">
+                  <div>
+                    <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Título do Regulamento</label>
+                    <input type="text" id="cfg-rules-title" class="w-full bg-slate-900 border border-slate-800 p-2 rounded-xl text-xs text-slate-200 focus:outline-none" oninput="window.saveConfigField('rulesTitle', this.value)">
+                  </div>
+                  <div>
+                    <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Texto Geral</label>
+                    <textarea id="cfg-rules-text" rows="3" class="w-full bg-slate-900 border border-slate-800 p-2 text-slate-200 text-xs focus:outline-none rounded-xl font-mono" oninput="window.saveConfigField('rulesText', this.value)"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <span class="text-[10px] uppercase font-black text-indigo-400 block mb-1">👁️ Controle de Visibilidade das Abas</span>
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  ${['home', 'jogos', 'placar', 'turmas', 'inscricoes'].map(tabId => {
+                    const names = { home: 'Início', jogos: 'Cronograma', placar: 'Medalhas', turmas: 'Turmas', inscricoes: 'Inscrições' };
+                    const isChecked = state.menuVisibility[tabId] !== false;
+                    return `
+                      <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300">
+                        <input type="checkbox" onchange="window.toggleMenuVisibility('${tabId}', this.checked)" ${isChecked ? 'checked' : ''} class="rounded border-slate-800 text-indigo-600 focus:ring-0 bg-slate-900 w-4 h-4">
+                        ${names[tabId]}
+                      </label>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+
+          const fbConfig = (state.configuracoes && state.configuracoes.firebaseConfig) || { apiKey: '', projectId: '', databaseURL: '' };
+          firebaseCardHTML = `
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl text-left shadow-2xl relative overflow-hidden mb-6">
+              <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-indigo-600"></div>
+              <div class="flex items-center gap-2 border-b border-slate-800 pb-3 mb-4">
+                <i class="fa-solid fa-cloud text-amber-400 text-lg"></i>
+                <h3 class="font-extrabold text-xs uppercase text-amber-400 tracking-wider">
+                  Sincronização em Nuvem em Tempo Real (Firebase)
+                </h3>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed mb-4">
+                Insira as credenciais do seu Firebase para manter múltiplos dispositivos sincronizados instantaneamente.
+              </p>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">API KEY</label>
+                  <input type="text" id="fb-api-key" placeholder="AiZaSy..." value="${fbConfig.apiKey || ''}" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-amber-500" style="font-family: 'Times New Roman', Times, serif;">
+                </div>
+                <div>
+                  <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">PROJECT ID</label>
+                  <input type="text" id="fb-project-id" placeholder="cef412-db-1234" value="${fbConfig.projectId || ''}" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                  <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">DATABASE URL (OPCIONAL)</label>
+                  <input type="text" id="fb-database-url" placeholder="https://..." value="${fbConfig.databaseURL || ''}" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+                </div>
+              </div>
+              <button onclick="window.saveFirebaseCredentials()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 px-6 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md">
+                Salvar Credenciais e Conectar
+              </button>
+            </div>
+          `;
+
+          userManagementHTML = `
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl text-left shadow-2xl relative mb-6">
+              <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-users-gear text-indigo-400"></i>
+                  <h3 class="font-extrabold text-xs uppercase text-slate-200 tracking-wider">
+                    Perfis de Acesso & Segurança
+                  </h3>
+                </div>
+                <button onclick="window.openAddUserModal()" class="bg-indigo-600 hover:bg-indigo-500 font-bold px-3 py-1.5 rounded-xl text-[10px] text-white">
+                  Adicionar Novo Perfil
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+                <!-- Esquerda: Perfis Registrados -->
+                <div class="space-y-3">
+                  <span class="text-[10px] uppercase font-black text-slate-500 block">Perfis de Usuário Registrados</span>
+                  <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    ${state.usuarios.map(usr => {
+                      const isDefault = usr.isDefault === true;
+                      const roleNames = { admin: 'ADMIN', admin2: 'ADMIN2', professor: 'PROFESSOR', mesario: 'MESARIO' };
+                      return `
+                        <div class="bg-slate-950 border border-slate-800 p-3 rounded-2xl flex justify-between items-center">
+                          <div>
+                            <span class="text-xs font-bold text-slate-200 block">${usr.name} <span class="text-[9px] text-indigo-400">(${roleNames[usr.role] || 'STAFF'})</span></span>
+                            <span class="text-[10px] text-slate-500 font-mono">Login: ${usr.username}</span>
+                          </div>
+                          <div class="flex items-center gap-2">
+                            ${isDefault ? `
+                              <span class="text-[9px] font-black uppercase text-slate-600 tracking-wider">Padrão</span>
+                            ` : `
+                              <button onclick="window.editUser('${usr.id}')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-pen text-xs"></i></button>
+                              <button onclick="window.deleteUser('${usr.id}')" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                            `}
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+
+                <!-- Direita: Guia de Níveis -->
+                <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-center">
+                  <span class="text-[10px] font-black uppercase text-slate-400 block border-b border-slate-800 pb-1.5">Guia de Níveis de Permissões:</span>
+                  <ul class="space-y-2 text-[11px] text-slate-300 leading-relaxed list-disc list-inside">
+                    <li><strong>Administrador Geral (Admin):</strong> Controle total sobre chaves, turmas, alunos, notas, regulamentos e segurança.</li>
+                    <li><strong>Admin 2 (Auxiliar):</strong> Controle operacional total sobre chaves, turmas e notas, com todas as ações de professor e mesário.</li>
+                    <li><strong>Professor:</strong> Can cadastrar e matricular atletas apenas de sua classe de trabalho.</li>
+                    <li><strong>Mesário:</strong> Can registrar presenças e alterar placares diretamente na mesa técnica.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        const sports = state.modalidades.filter(m => m.shift === activeShift);
+        let sportsCardsHTML = '';
+        sports.forEach(sp => {
+          sportsCardsHTML += `
+            <div onclick="window.openBracketModal('${sp.id}')" class="bg-slate-900 border border-slate-800 hover:border-indigo-500/50 p-5 rounded-3xl space-y-3 cursor-pointer transition-all hover:scale-[1.01] relative group text-left shadow-lg">
+              <div class="flex justify-between items-start">
+                <div class="flex items-center gap-3">
+                  <span class="text-3xl bg-slate-950 p-2 rounded-2xl border border-slate-800 group-hover:bg-indigo-950/40 transition-colors">${sp.icon}</span>
+                  <div>
+                    <h5 class="font-extrabold text-sm text-slate-200 group-hover:text-amber-400 transition-colors">${sp.name}</h5>
+                    <span class="text-[9px] uppercase font-bold text-indigo-400">
+                      Chave: ${sp.system === 'mata_mata' ? 'Mata-Mata Simples' : sp.system === 'double_elimination' ? 'Dupla Eliminação' : 'Pontos Corridos'}
+                    </span>
+                  </div>
+                </div>
+
+                ${isAdmin ? `
+                  <div class="flex gap-1.5 no-print" onclick="event.stopPropagation()">
+                    <button onclick="window.editModalidade('${sp.id}')" class="p-1 text-slate-400 hover:text-white" title="Editar Esporte">
+                      <i class="fa-solid fa-pen-to-square text-xs"></i>
+                    </button>
+                    <button onclick="window.deleteModalidade('${sp.id}')" class="p-1 text-slate-400 hover:text-rose-400" title="Excluir Esporte">
+                      <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                  </div>
+                ` : ''}
+              </div>
+              
+              <p class="text-xs text-slate-400 leading-relaxed truncate">${sp.rulesText || 'Sem diretrizes cadastradas.'}</p>
+              
+              <div class="flex justify-between items-center pt-2">
+                <span class="text-[10px] font-bold text-indigo-400 hover:underline">Ver Tabela e Chave →</span>
+                ${isAdmin ? `
+                  <button type="button" onclick="event.stopPropagation(); window.triggerAutoDraw('${sp.id}')" class="bg-indigo-600 hover:bg-indigo-550 text-white font-bold text-[9px] py-1 px-2.5 rounded-lg flex items-center gap-1 transition-colors no-print shadow-md">
+                    <i class="fa-solid fa-shuffle"></i> Sorteio Completo
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        });
+
+        if (!sportsCardsHTML) {
+          sportsCardsHTML = `
+            <div class="col-span-2 text-center py-10 bg-slate-900 border border-slate-800 rounded-2xl text-xs text-slate-500 italic">
+              Nenhuma modalidade criada para este turno.
+            </div>
+          `;
+        }
+
+        main.innerHTML = `
+          <div class="space-y-6">
+            ${adminPanelHTML}
+            ${userManagementHTML}
+            ${firebaseCardHTML}
+
+            <!-- Card de Boas-Vindas -->
+            <div class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 p-6 rounded-3xl border border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6 text-left shadow-xl">
+              <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-md">
+                  <i class="fa-solid fa-school text-3xl"></i>
+                </div>
+                <div class="space-y-1">
+                  <h3 class="text-lg sm:text-xl font-black text-slate-100">${state.configuracoes.welcomeTitle || 'Jogos Interclasse CEF 412 - 2026'}</h3>
+                  <p class="text-xs text-slate-400 leading-relaxed max-w-xl">${state.configuracoes.welcomeSubtitle || 'Coisas boas acontecem aqui!'}</p>
+                </div>
+              </div>
+              
+              <button onclick="window.openRulesModal()" class="bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 font-extrabold px-5 py-3 rounded-2xl text-xs flex items-center gap-1.5 transition-colors shadow">
+                <i class="fa-solid fa-gavel text-amber-500"></i> Regulamento Geral dos Jogos
+              </button>
+            </div>
+
+            <div class="space-y-4">
+              <h4 class="text-xs font-black uppercase text-slate-500 tracking-wider text-left">Categorias Ativas (Clique para abrir a Chave)</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${sportsCardsHTML}
+              </div>
+            </div>
+          </div>
+        `;
+
+        if (isAdmin) {
+          document.getElementById('cfg-portal-title').value = state.configuracoes.titlePortal;
+          document.getElementById('cfg-portal-sub').value = state.configuracoes.subtitlePortal;
+          document.getElementById('cfg-portal-max-sports').value = state.configuracoes.maxSportsPerStudent ?? 2;
+          document.getElementById('cfg-rules-title').value = state.configuracoes.rulesTitle || '';
+          document.getElementById('cfg-rules-text').value = state.configuracoes.rulesText || '';
+        }
+      }
+
+      else if (activeTab === 'jogos') {
+        const sports = state.modalidades.filter(m => m.shift === activeShift);
+        const activeTurmas = state.turmas.filter(t => t.shift === activeShift);
+
+        main.innerHTML = `
+          <div class="space-y-6">
+            <!-- Filtros Globais -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-3xl grid grid-cols-1 sm:grid-cols-4 gap-3 items-end no-print text-left">
+              <div>
+                <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Esporte</label>
+                <select id="filter-sport" class="w-full bg-slate-950 p-2.5 rounded-xl text-xs border border-slate-800 text-slate-200 focus:outline-none" onchange="window.updateJogosFilters()">
+                  <option value="all" ${currentFilters.sport === 'all' ? 'selected' : ''}>Todos os esportes</option>
+                  ${sports.map(s => `<option value="${s.id}" ${currentFilters.sport === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Turma</label>
+                <select id="filter-class" class="w-full bg-slate-950 p-2.5 rounded-xl text-xs border border-slate-800 text-slate-200 focus:outline-none" onchange="window.updateJogosFilters()">
+                  <option value="all" ${currentFilters.class === 'all' ? 'selected' : ''}>Todas as turmas</option>
+                  ${activeTurmas.map(t => `<option value="${t.id}" ${currentFilters.class === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status</label>
+                <select id="filter-status" class="w-full bg-slate-950 p-2.5 rounded-xl text-xs border border-slate-800 text-slate-200 focus:outline-none" onchange="window.updateJogosFilters()">
+                  <option value="all" ${currentFilters.status === 'all' ? 'selected' : ''}>Todos</option>
+                  <option value="scheduled" ${currentFilters.status === 'scheduled' ? 'selected' : ''}>Agendados</option>
+                  <option value="finished" ${currentFilters.status === 'finished' ? 'selected' : ''}>Finalizados</option>
+                </select>
+              </div>
+
+              <div class="flex gap-2">
+                <button onclick="window.print()" class="flex-1 bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl text-xs font-bold border border-slate-700 flex items-center justify-center gap-1.5 transition-colors text-white">
+                  <i class="fa-solid fa-print"></i> Imprimir Cronograma
+                </button>
+                ${isAdmin ? `
+                  <button onclick="window.exportMatchesCSV()" class="flex-1 bg-indigo-900/40 border border-indigo-700 text-indigo-300 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-900/60 transition-colors">
+                    📊 Exportar CSV
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Listagem de Confrontos -->
+            <div id="matches-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+          </div>
+        `;
+
+        renderMatchesList();
+      }
+
+      else if (activeTab === 'placar') {
+        const activeTurmas = state.turmas.filter(t => t.shift === activeShift);
+        const sports = state.modalidades.filter(m => m.shift === activeShift);
+
+        const standings = activeTurmas.map(t => {
+          let gold = 0, silver = 0, bronze = 0, total = 0;
+          let goldSports = [], silverSports = [], bronzeSports = [];
+
+          sports.forEach(sp => {
+            const hasAthletes = state.alunos.some(a => a.classId === t.id && a.sports && a.sports.includes(sp.id));
+            if (hasAthletes) {
+              total += sp.pointsParticipation ?? 2;
+            }
+
+            const podium = getPodiumBySport(sp.id);
+            if (podium.gold === t.id) {
+              gold++;
+              total += ((sp.pointsGold ?? 10) - (sp.pointsParticipation ?? 2));
+              goldSports.push(sp.name);
+            }
+            if (podium.silver === t.id) {
+              silver++;
+              total += ((sp.pointsSilver ?? 7) - (sp.pointsParticipation ?? 2));
+              silverSports.push(sp.name);
+            }
+            if (podium.bronze === t.id) {
+              bronze++;
+              total += ((sp.pointsBronze ?? 5) - (sp.pointsParticipation ?? 2));
+              bronzeSports.push(sp.name);
+            }
+          });
+
+          return {
+            ...t,
+            gold, silver, bronze, total,
+            goldSports, silverSports, bronzeSports
+          };
+        }).sort((a, b) => b.total - a.total || b.gold - a.gold || b.silver - a.silver);
+
+        main.innerHTML = `
+          <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl text-left space-y-6">
+            <div class="border-b border-slate-800 pb-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+              <div>
+                <h4 class="font-extrabold text-sm uppercase text-amber-400">Classificação e Quadro de Medalhas do Turno</h4>
+                <p class="text-xs text-slate-400 mt-1">Soma de pontos considerando colocações e participação no esporte.</p>
+              </div>
+              
+              <button onclick="window.openAwardModal()" class="bg-indigo-600 hover:bg-indigo-550 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 text-white transition-all shadow-md self-start sm:self-auto">
+                <i class="fa-solid fa-trophy"></i> Alunos Medalhistas CEF 412
+              </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs sm:text-sm">
+                <thead>
+                  <tr class="border-b border-slate-800 text-slate-400 font-bold uppercase">
+                    <th class="pb-3 text-center w-12">Pos</th>
+                    <th class="pb-3">Turma / País</th>
+                    <th class="pb-3 text-center">🥇 Ouro</th>
+                    <th class="pb-3 text-center">🥈 Prata</th>
+                    <th class="pb-3 text-center">🥉 Bronze</th>
+                    <th class="pb-3 text-right">Soma Geral</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                  ${standings.map((item, idx) => `
+                    <tr class="hover:bg-slate-800/20">
+                      <td class="py-4 text-center font-black text-amber-400">${idx + 1}º</td>
+                      <td class="py-4 font-bold">
+                        <div>
+                          <span class="text-slate-200 block flex items-center gap-1.5 text-sm">
+                            ${getCountryFlagHTML(item.country)} ${item.name}
+                          </span>
+                          <span class="text-[10px] text-slate-500 font-medium">Conselho: ${item.advisor}</span>
+                        </div>
+                      </td>
+                      
+                      <td class="py-4 text-center">
+                        <span class="font-bold text-slate-200 block text-sm">${item.gold}</span>
+                        ${item.goldSports.length > 0 ? `
+                          <span class="text-[9px] text-slate-400 font-normal bg-slate-900 px-1.5 py-0.5 rounded block mt-1 truncate max-w-[100px] mx-auto">
+                            ${item.goldSports.join(', ')}
+                          </span>
+                        ` : ''}
+                      </td>
+                      <td class="py-4 text-center">
+                        <span class="font-bold text-slate-300 block text-sm">${item.silver}</span>
+                        ${item.silverSports.length > 0 ? `
+                          <span class="text-[9px] text-slate-400 font-normal bg-slate-900 px-1.5 py-0.5 rounded block mt-1 truncate max-w-[100px] mx-auto">
+                            ${item.silverSports.join(', ')}
+                          </span>
+                        ` : ''}
+                      </td>
+                      <td class="py-4 text-center">
+                        <span class="font-bold text-amber-600 block text-sm">${item.bronze}</span>
+                        ${item.bronzeSports.length > 0 ? `
+                          <span class="text-[9px] text-slate-400 font-normal bg-slate-900 px-1.5 py-0.5 rounded block mt-1 truncate max-w-[100px] mx-auto">
+                            ${item.bronzeSports.join(', ')}
+                          </span>
+                        ` : ''}
+                      </td>
+                      <td class="py-4 text-right font-black text-indigo-400 text-sm sm:text-base">${item.total} pts</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      else if (activeTab === 'turmas') {
+        const activeTurmas = state.turmas.filter(t => t.shift === activeShift);
+        const activeModalidades = state.modalidades.filter(m => m.shift === activeShift);
+
+        main.innerHTML = `
+          <div class="space-y-4 text-left">
+            <div class="flex justify-between items-center">
+              <div>
+                <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider">Relação de Equipes Formadas</h4>
+                <p class="text-xs text-slate-400 mt-1">Gere relatórios de inscrição e acompanhe a formação das salas.</p>
+              </div>
+              ${isAdmin ? `
+                <button onclick="window.openTurmaModal()" class="bg-indigo-600 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-1 shadow text-white">
+                  <i class="fa-solid fa-plus"></i> Adicionar Turma
+                </button>
+              ` : ''}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              ${activeTurmas.map(t => {
+                const count = state.alunos.filter(a => a.classId === t.id).length;
+                
+                let alertBoxesHTML = '';
+                activeModalidades.forEach(mod => {
+                  const numInscritos = state.alunos.filter(a => a.classId === t.id && a.sports && a.sports.includes(mod.id)).length;
+                  const minRequired = mod.minPlayers || 2;
+
+                  if (numInscritos === 0) {
+                    alertBoxesHTML += `
+                      <div class="text-[10px] text-rose-400 bg-rose-950/20 border border-rose-900/30 p-1.5 rounded-lg flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-xmark text-rose-500"></i>
+                        <span>Incompleta: <strong>${mod.icon} ${mod.name}</strong> (Sem Inscritos)</span>
+                      </div>
+                    `;
+                  } else if (numInscritos < minRequired) {
+                    alertBoxesHTML += `
+                      <div class="text-[10px] text-amber-400 bg-amber-955/20 border border-amber-900/30 p-1.5 rounded-lg flex items-center gap-1.5">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                        <span>Insuficiente: <strong>${mod.icon} ${mod.name}</strong> (${numInscritos}/${minRequired} atletas)</span>
+                      </div>
+                    `;
+                  }
+                });
+
+                return `
+                  <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl relative overflow-hidden flex flex-col justify-between shadow-md text-left">
+                    <div class="absolute top-0 left-0 right-0 h-1.5 bg-${t.color || 'indigo'}-500"></div>
+                    <div class="space-y-3">
+                      <div class="flex justify-between items-start">
+                        <h5 class="font-extrabold text-sm text-slate-100 flex items-center gap-1.5">
+                          ${getCountryFlagHTML(t.country)} ${t.name}
+                        </h5>
+                        <div class="flex gap-2 no-print">
+                          <button onclick="window.printClassCard('${t.id}')" class="text-slate-400 hover:text-white" title="Imprimir Ficha">
+                            <i class="fa-solid fa-print"></i>
+                          </button>
+                          ${isAdmin ? `
+                            <button onclick="window.editTurma('${t.id}')" class="text-slate-400 hover:text-indigo-400" title="Editar Turma">
+                              <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="window.deleteTurma('${t.id}')" class="text-slate-400 hover:text-rose-400" title="Excluir Turma">
+                              <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                          ` : ''}
+                        </div>
+                      </div>
+                      <p class="text-xs text-slate-400 font-semibold">Conselheiro: <span class="text-slate-200">${t.advisor}</span></p>
+                      
+                      <!-- Alertas de Categoria -->
+                      <div class="space-y-1.5 pt-1">
+                        ${alertBoxesHTML || `
+                          <div class="text-[10px] text-emerald-400 bg-emerald-950/10 border border-emerald-900/20 p-1.5 rounded-lg flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-check"></i> Elenco apto para disputas!
+                          </div>
+                        `}
+                      </div>
+
+                      <span class="text-[10px] uppercase font-bold text-slate-500 block pt-1 border-t border-slate-800/40">Inscritos: ${count} Alunos</span>
+                      
+                      <div class="space-y-2 pt-2 border-t border-slate-800/40">
+                        <label class="block text-[10px] uppercase font-black text-indigo-400">Ver Convocados por Categoria:</label>
+                        <select onchange="window.toggleRosterView('${t.id}', this.value)" class="w-full bg-slate-950 border border-slate-800 text-slate-300 p-2.5 rounded-xl text-xs focus:outline-none font-bold">
+                          <option value="none">Ocultar lista</option>
+                          <option value="all">Ver todas as categorias</option>
+                          ${activeModalidades.map(mod => `<option value="${mod.id}">${mod.icon} ${mod.name}</option>`).join('')}
+                        </select>
+                        <div id="roster-sport-container-${t.id}" class="mt-2 min-h-[30px] flex flex-col justify-center">
+                          <span class="text-[10px] italic text-slate-500 text-left">Selecione uma opção para carregar os atletas...</span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      else if (activeTab === 'inscricoes') {
+        const canAccess = isAdmin || isProf;
+
+        if (!canAccess) {
+          main.innerHTML = `
+            <div class="bg-slate-900 border border-slate-800 p-8 rounded-3xl text-center max-w-md mx-auto space-y-4 shadow-xl text-left">
+              <i class="fa-solid fa-typewriter text-amber-500 text-4xl animate-pulse block text-center mx-auto"></i>
+              <h4 class="font-bold text-slate-200 text-sm text-center">Área do Professor Concessionário</h4>
+              <p class="text-xs text-slate-400 leading-relaxed text-center">Efetue login com as credenciais administrativas para gerenciar atletas e organizar sua delegação.</p>
+              <button onclick="window.openLoginModal()" class="bg-amber-600 text-slate-950 font-black px-4 py-2 rounded-xl text-xs uppercase tracking-wide mx-auto block shadow">Fazer Login de Staff</button>
+            </div>
+          `;
+          return;
+        }
+
+        const activeTurmas = state.turmas.filter(t => t.shift === activeShift);
+
+        main.innerHTML = `
+          <div class="space-y-6 text-left">
+            <div class="bg-indigo-950/20 border border-indigo-800/60 p-4 rounded-3xl space-y-2">
+              <span class="text-xs font-black uppercase text-indigo-400 block">Gestão Unificada de Atletas</span>
+              <p class="text-xs text-slate-300">Defina as modalidades de cada aluno individualmente ou use o importador em massa abaixo com identificação de gênero automática.</p>
+            </div>
+
+            <!-- Importador em Massa -->
+            ${isAdmin ? `
+              <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-4">
+                <h4 class="text-xs font-black uppercase text-slate-300 flex items-center gap-1.5 font-bold">
+                  <i class="fa-solid fa-file-excel text-indigo-400"></i> Importar Lista de Chamada em Massa (Até 40 Alunos)
+                </h4>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Turma Alvo de Importação</label>
+                    <select id="import-class-target" class="w-full bg-slate-950 p-2.5 rounded-xl text-xs border border-slate-800 text-slate-100 focus:outline-none font-bold">
+                      <option value="all">Escolha uma sala...</option>
+                      ${activeTurmas.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Insira a lista (Um nome completo por linha - Gênero será sugerido automaticamente!)</label>
+                    <textarea id="import-bulk-text" rows="3" placeholder="Insira ou cole a lista de nomes..." class="w-full bg-slate-950 p-3 rounded-xl text-xs font-mono text-slate-200 border border-slate-800 focus:outline-none"></textarea>
+                  </div>
+                </div>
+                <button onclick="window.submitBulkImport()" class="bg-indigo-600 hover:bg-indigo-550 font-bold text-xs py-2.5 px-4 rounded-xl text-white shadow transition-all">
+                  🚀 Cadastrar Lista Unificada (Gênero Automático)
+                </button>
+              </div>
+            ` : ''}
+
+            <!-- Lista Nominal de Alunos -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+              <div class="p-4 bg-slate-950 border-b border-slate-800 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                <span class="text-xs font-bold text-slate-400">Relação Nominal dos Estudantes</span>
+                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <select id="student-filter-class" class="bg-slate-900 border border-slate-800 text-xs px-3 py-1.5 rounded-xl text-slate-200 focus:outline-none font-bold" onchange="window.updateStudentFilters()">
+                    <option value="all" ${currentFilters.studentClass === 'all' ? 'selected' : ''}>Todas as turmas</option>
+                    ${activeTurmas.map(t => `<option value="${t.id}" ${currentFilters.studentClass === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
+                  </select>
+                  <input type="text" id="student-search-name" placeholder="Pesquisar por nome..." class="bg-slate-900 border border-slate-800 text-xs px-3 py-1.5 rounded-xl text-slate-200 focus:outline-none flex-1 font-semibold" oninput="window.updateStudentFilters()" value="${currentFilters.studentSearch}">
+                  <button onclick="window.openStudentModal()" class="bg-indigo-600 px-3 py-1.5 rounded-xl text-xs font-bold text-white flex items-center gap-1 shadow">
+                    <i class="fa-solid fa-user-plus"></i> Novo Aluno
+                  </button>
+                </div>
+              </div>
+
+              <div id="students-list-container" class="divide-y divide-slate-800"></div>
+            </div>
+          </div>
+        `;
+
+        renderStudentsList();
+      }
+    }
+
+    // --- CONTROLE DOS FILTROS ---
+    function updateJogosFilters() {
+      currentFilters.sport = document.getElementById('filter-sport').value;
+      currentFilters.class = document.getElementById('filter-class').value;
+      currentFilters.status = document.getElementById('filter-status').value;
+      renderMatchesList();
+    }
+
+    // --- DETECTOR HEURÍSTICO DE GÊNERO POR NOME PORTUGUÊS ---
+    function detectGenderFromName(fullName) {
+      if (!fullName) return 'M';
+      const firstName = fullName.trim().split(/\s+/)[0];
+      if (!firstName) return 'M';
+      
+      const normalized = firstName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      
+      const explicitFemales = [
+        'beatriz', 'alice', 'yasmin', 'yasmim', 'isabel', 'isabelle', 'raquel', 'rachel', 
+        'ester', 'esther', 'ruth', 'helen', 'ellen', 'nicole', 'evelyn', 'iris', 'vivian', 
+        'miriam', 'mirian', 'abigail', 'ingrid', 'solange', 'elis', 'denise', 'gisele', 
+        'michele', 'michelle', 'caroline', 'carol', 'sueli', 'suely', 'thais', 'tais', 
+        'ines', 'inez', 'marlene', 'rose', 'rosene', 'cleide', 'neide', 'lourdes', 
+        'socorro', 'penha', 'ariel', 'nair', 'maris', 'viviane', 'ariane', 'eliane', 
+        'cristiane', 'lidiane', 'tatiane', 'rayane', 'daiane', 'karine', 'aline', 
+        'cibele', 'graziele', 'emily', 'ketly', 'kemilly', 'grazielly', 'kelly', 
+        'shirley', 'grazy', 'daisy', 'lacy', 'thay', 'mary', 'clara', 'sarah', 'rebeca'
+      ];
+
+      const maleExceptions = [
+        'luca', 'lucas', 'joshua', 'sasha', 'andrea', 'andreas', 'kaka', 'batista', 
+        'evangelista', 'mustafa', 'ian', 'jean', 'luan', 'nathan', 'renan', 'alan'
+      ];
+
+      if (explicitFemales.includes(normalized)) return 'F';
+      if (maleExceptions.includes(normalized)) return 'M';
+
+      if (
+        normalized.endsWith('a') || 
+        normalized.endsWith('ia') || 
+        normalized.endsWith('ina') || 
+        normalized.endsWith('ila') || 
+        normalized.endsWith('ita') || 
+        normalized.endsWith('essa') ||
+        normalized.endsWith('elly') ||
+        normalized.endsWith('any') ||
+        normalized.endsWith('iny') ||
+        normalized.endsWith('ane') ||
+        normalized.endsWith('ele') ||
+        normalized.endsWith('ice') ||
+        normalized.endsWith('rose')
+      ) {
+        return 'F';
+      }
+
+      return 'M';
+    }
+
+    function updateStudentFilters() {
+      currentFilters.studentClass = document.getElementById('student-filter-class').value;
+      currentFilters.studentSearch = document.getElementById('student-search-name').value;
+      renderStudentsList();
+    }
+
+    function renderMatchesList() {
+      const container = document.getElementById('matches-list-container');
+      if (!container) return;
+
+      const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'admin2');
+      const isMesario = currentUser && currentUser.role === 'mesario';
+      const activeConfrontos = state.confrontos.filter(c => c.shift === activeShift);
+
+      const filtered = activeConfrontos.filter(m => {
+        if (currentFilters.sport !== 'all' && m.sportId !== currentFilters.sport) return false;
+        if (currentFilters.class !== 'all' && m.team1 !== currentFilters.class && m.team2 !== currentFilters.class) return false;
+        if (currentFilters.status !== 'all' && m.status !== currentFilters.status) return false;
+        return true;
+      });
+
+      let html = '';
+      filtered.forEach(m => {
+        const sport = state.modalidades.find(sp => sp.id === m.sportId) || { name: 'Geral', icon: '🏆' };
+        const t1 = state.turmas.find(t => t.id === m.team1) || { name: m.team1, country: '' };
+        const t2 = state.turmas.find(t => t.id === m.team2) || { name: m.team2, country: '' };
+        const isFinished = m.status === 'finished';
+
+        html += `
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col justify-between space-y-4 print-card shadow-lg text-left">
+            <div class="space-y-3">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-extrabold text-indigo-400 bg-indigo-950/60 px-2.5 py-1 rounded-full">${sport.icon} ${sport.name}</span>
+                <span class="text-[10px] uppercase font-bold bg-slate-950 px-2 py-0.5 rounded text-slate-400">${m.stage}</span>
+              </div>
+
+              <div class="space-y-2 bg-slate-950/40 p-3 rounded-2xl border border-slate-800/65">
+                <div class="flex justify-between text-sm font-bold">
+                  <span class="truncate max-w-[150px] flex items-center gap-1 text-slate-200">
+                    ${getCountryFlagHTML(t1.country)} ${t1.name}
+                  </span>
+                  <span class="text-amber-400 font-mono text-base">${isFinished ? m.score1 : '-'}</span>
+                </div>
+                <div class="flex justify-between text-sm font-bold">
+                  <span class="truncate max-w-[150px] flex items-center gap-1 text-slate-200">
+                    ${getCountryFlagHTML(t2.country)} ${t2.name}
+                  </span>
+                  <span class="text-amber-400 font-mono text-base">${isFinished ? m.score2 : '-'}</span>
+                </div>
+              </div>
+
+              <div class="text-[11px] text-slate-400 flex justify-between font-semibold">
+                <span>📅 ${m.date || 'A definir'}</span>
+                <span>📍 ${m.location || 'Quadra'}</span>
+              </div>
+            </div>
+
+            <div class="flex gap-2 no-print">
+              <button onclick="window.openSumulaModal('${m.id}')" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow text-slate-200">
+                <i class="fa-solid fa-clipboard-list text-amber-400"></i> Súmula Oficial
+              </button>
+              ${(isAdmin || isMesario) ? `
+                <button onclick="window.openMatchScoreModal('${m.id}')" class="px-4 py-2 bg-indigo-950 border border-indigo-800 hover:bg-indigo-900/50 text-indigo-300 text-xs font-bold rounded-xl shadow transition-colors">
+                  Placar
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      if (html === '') {
+        html = `
+          <div class="col-span-3 text-center py-10 bg-slate-900 border border-slate-800 rounded-2xl text-xs text-slate-500 italic">
+            Nenhum jogo encontrado com os filtros selecionados.
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function renderStudentsList() {
+      const container = document.getElementById('students-list-container');
+      if (!container) return;
+
+      const searchName = currentFilters.studentSearch.toLowerCase();
+      const activeModalidades = state.modalidades.filter(m => m.shift === activeShift);
+
+      const filtered = state.alunos.filter(a => {
+        if (a.shift !== activeShift) return false;
+        if (currentFilters.studentClass !== 'all' && a.classId !== currentFilters.studentClass) return false;
+        if (searchName && !a.name.toLowerCase().includes(searchName)) return false;
+        return true;
+      });
+
+      let html = '';
+      filtered.forEach(athlete => {
+        const turma = state.turmas.find(t => t.id === athlete.classId) || { name: 'Delegação Livre' };
+        
+        let sportsButtonsHTML = '';
+        activeModalidades.forEach(mod => {
+          const active = athlete.sports && athlete.sports.includes(mod.id);
+          const isEligible = mod.gender === 'Geral' || mod.gender === 'Misto' || mod.gender === athlete.gender;
+
+          if (isEligible) {
+            sportsButtonsHTML += `
+              <button onclick="window.toggleStudentSport('${athlete.id}', '${mod.id}')" class="text-[10px] font-black px-2.5 py-1.5 rounded-xl border flex items-center gap-1 transition-all ${active ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-md' : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-400'}" title="${mod.name}">
+                <span>${mod.icon}</span> <span>${mod.name}</span>
+              </button>
+            `;
+          }
+        });
+
+        html += `
+          <div class="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-slate-800/10 transition-all text-left">
+            <div class="flex items-center gap-3">
+              <div>
+                <span class="font-extrabold text-sm flex items-center gap-2 text-slate-100">
+                  ${athlete.name}
+                  <button onclick="window.toggleStudentGenderDirect('${athlete.id}')" class="text-[9px] font-black px-2 py-1 rounded bg-slate-950 hover:bg-slate-800 transition-all text-slate-300 border border-slate-800" title="Alternar Gênero Reativamente">
+                    Gênero: <strong class="${athlete.gender === 'M' ? 'text-blue-400' : 'text-rose-400'}">${athlete.gender}</strong> 🔄
+                  </button>
+                </span>
+                <span class="text-xs text-slate-500 font-semibold">Turma: ${turma.name}</span>
+              </div>
+              <button onclick="window.editStudent('${athlete.id}')" class="p-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-400 hover:text-indigo-400 transition-all no-print" title="Editar Atleta">
+                <i class="fa-solid fa-pen text-xs"></i>
+              </button>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 items-center w-full md:w-auto justify-end">
+              ${sportsButtonsHTML}
+              <button onclick="window.deleteStudent('${athlete.id}')" class="p-2 bg-slate-950 border border-slate-800 hover:bg-rose-950/40 text-slate-500 hover:text-rose-400 rounded-xl ml-2 transition-all shadow" title="Excluir Estudante">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      if (html === '') {
+        html = `
+          <div class="text-center py-10 text-xs text-slate-500 italic">
+            Nenhum estudante matriculado com estes parâmetros de busca.
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function toggleRosterView(turmaId, value) {
+      const container = document.getElementById(`roster-sport-container-${turmaId}`);
+      if (!container) return;
+
+      if (value === 'none') {
+        container.innerHTML = `<span class="text-[10px] italic text-slate-500 text-left">Selecione uma opção acima para carregar os atletas...</span>`;
+        return;
+      }
+
+      const activeModalidades = state.modalidades.filter(m => m.shift === activeShift);
+
+      if (value === 'all') {
+        let html = '';
+        activeModalidades.forEach(mod => {
+          const teamAtletas = state.alunos.filter(a => a.classId === turmaId && a.sports && a.sports.includes(mod.id));
+          if (teamAtletas.length > 0) {
+            html += `
+              <div class="p-2.5 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-1 mb-2 text-left">
+                <span class="text-[10px] font-black text-indigo-400 flex items-center gap-1.5">
+                  <span>${mod.icon}</span> <span>${mod.name}</span>
+                </span>
+                <div class="pl-2.5 border-l border-slate-800 space-y-1">
+                  ${teamAtletas.map(ath => `
+                    <div class="text-[11px] text-slate-300 flex justify-between pr-1">
+                      <span>● ${ath.name}</span>
+                      <span class="text-[9px] text-slate-500 font-bold uppercase">${ath.gender}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+        });
+
+        if (!html) {
+          html = `<span class="text-[10px] italic text-slate-500 text-left">Nenhum atleta inscrito nesta sala.</span>`;
+        }
+        container.innerHTML = html;
+        return;
+      }
+
+      const mod = activeModalidades.find(m => m.id === value);
+      if (mod) {
+        const teamAtletas = state.alunos.filter(a => a.classId === turmaId && a.sports && a.sports.includes(mod.id));
+        if (teamAtletas.length > 0) {
+          container.innerHTML = `
+            <div class="p-2.5 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-1 text-left">
+              <span class="text-[10px] font-black text-indigo-400 flex items-center gap-1.5">
+                <span>${mod.icon}</span> <span>${mod.name}</span>
+              </span>
+              <div class="pl-2.5 border-l border-slate-800 space-y-1">
+                ${teamAtletas.map(ath => `
+                  <div class="text-[11px] text-slate-300 flex justify-between pr-1">
+                    <span>● ${ath.name}</span>
+                    <span class="text-[9px] text-slate-500 font-bold uppercase">${ath.gender}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `<span class="text-[10px] italic text-slate-500 text-left">Nenhum atleta convocado para este esporte.</span>`;
+        }
+      }
+    }
+
+    // --- ALGORITMO DE CLASSIFICAÇÃO / PÓDIO ---
+    function getPodiumBySport(sportId) {
+      const sport = state.modalidades.find(m => m.id === sportId);
+      if (!sport) return { gold: null, silver: null, bronze: null };
+
+      let gold = null; let silver = null; let bronze = null;
+
+      if (sport.system === 'mata_mata' || sport.system === 'double_elimination') {
+        const finalMatch = state.confrontos.find(m => m.sportId === sportId && m.id.includes('central-final'));
+        const thirdMatch = state.confrontos.find(m => m.sportId === sportId && m.id.includes('central-third'));
+
+        if (finalMatch && finalMatch.status === 'finished') {
+          if (finalMatch.score1 > finalMatch.score2) {
+            gold = finalMatch.team1; silver = finalMatch.team2;
+          } else if (finalMatch.score2 > finalMatch.score1) {
+            gold = finalMatch.team2; silver = finalMatch.team1;
+          } else {
+            const tw = finalMatch.tieWinner || finalMatch.team1;
+            gold = tw;
+            silver = tw === finalMatch.team1 ? finalMatch.team2 : finalMatch.team1;
+          }
+        }
+
+        if (thirdMatch && thirdMatch.status === 'finished') {
+          if (thirdMatch.score1 > thirdMatch.score2) {
+            bronze = thirdMatch.team1;
+          } else if (thirdMatch.score2 > thirdMatch.score1) {
+            bronze = thirdMatch.team2;
+          } else {
+            bronze = thirdMatch.tieWinner || thirdMatch.team1;
+          }
+        }
+      } else {
+        const standings = {};
+        const enrolled = sport.enrolledClasses || [];
+        enrolled.forEach(classId => {
+          standings[classId] = { classId, points: 0, gd: 0, goalsFor: 0 };
+        });
+
+        state.confrontos.filter(m => m.sportId === sportId).forEach(m => {
+          if (m.status !== 'finished') return;
+          const s1 = m.score1, s2 = m.score2;
+          const t1 = standings[m.team1], t2 = standings[m.team2];
+          if (t1 && t2) {
+            t1.goalsFor += s1; t1.gd += (s1 - s2);
+            t2.goalsFor += s2; t2.gd += (s2 - s1);
+            if (s1 > s2) { t1.points += 3; }
+            else if (s2 > s1) { t2.points += 3; }
+            else { t1.points += 1; t2.points += 1; }
+          }
+        });
+
+        const sorted = Object.values(standings).sort((a,b) => b.points - a.points || b.gd - a.gd || b.goalsFor - a.goalsFor);
+        if (sorted.length > 0) gold = sorted[0].classId;
+        if (sorted.length > 1) silver = sorted[1].classId;
+        if (sorted.length > 2) bronze = sorted[2].classId;
+      }
+
+      return { gold, silver, bronze };
+    }
+
+    // --- SALVAR CONFIGURAÇÃO INDIVIDUAL ---
+    function saveConfigField(key, value) {
+      state.configuracoes[key] = value;
+      saveState();
+      renderHeaderSession();
+    }
+
+    // --- CONTROLE DE CONTAS DE USUÁRIO (PERFIS DE ACESSO) ---
+    function openAddUserModal() {
+      document.getElementById('user-form-id').value = '';
+      document.getElementById('user-form').reset();
+      document.getElementById('user-modal-title').innerText = "Novo Perfil de Usuário";
+      document.getElementById('user-modal').classList.remove('hidden');
+    }
+
+    function closeUserModal() {
+      document.getElementById('user-modal').classList.add('hidden');
+    }
+
+    function saveUser(e) {
+      e.preventDefault();
+      const id = document.getElementById('user-form-id').value;
+      const name = document.getElementById('user-form-name').value.trim();
+      const username = document.getElementById('user-form-username').value.trim();
+      const passcode = document.getElementById('user-form-passcode').value.trim();
+      const role = document.getElementById('user-form-role').value;
+
+      let perms = [];
+      if (role === 'admin') perms = ['edit_config', 'edit_teams', 'edit_students', 'edit_matches', 'edit_attendance'];
+      else if (role === 'admin2') perms = ['edit_teams', 'edit_students', 'edit_matches'];
+      else if (role === 'professor') perms = ['edit_students'];
+      else if (role === 'mesario') perms = ['edit_matches', 'edit_attendance'];
+
+      if (id) {
+        const u = state.usuarios.find(usr => usr.id === id);
+        if (u) {
+          u.name = name; u.username = username; u.passcode = passcode; u.role = role; u.permissions = perms;
+        }
+      } else {
+        state.usuarios.push({
+          id: 'usr-' + Date.now(),
+          name, username, passcode, role, permissions: perms, isDefault: false
+        });
+      }
+
+      saveState();
+      closeUserModal();
+      showToast("Perfil de usuário atualizado com sucesso!");
+    }
+
+    function editUser(id) {
+      const u = state.usuarios.find(usr => usr.id === id);
+      if (!u) return;
+
+      openAddUserModal();
+      document.getElementById('user-form-id').value = u.id;
+      document.getElementById('user-form-name').value = u.name;
+      document.getElementById('user-form-username').value = u.username;
+      document.getElementById('user-form-passcode').value = u.passcode;
+      document.getElementById('user-form-role').value = u.role;
+      document.getElementById('user-modal-title').innerText = "Editar Perfil de Usuário";
+    }
+
+    function deleteUser(id) {
+      const u = state.usuarios.find(usr => usr.id === id);
+      if (!u) return;
+      if (u.isDefault) {
+        openAlertModal("Bloqueio de Segurança", "Contas padrão do sistema não podem ser excluídas.");
+        return;
+      }
+
+      openConfirmModal("Remover Conta", `Deseja permanentemente excluir o perfil técnico de ${u.name}?`, () => {
+        state.usuarios = state.usuarios.filter(usr => usr.id !== id);
+        saveState();
+        showToast("Perfil de segurança removido.");
+      });
+    }
+
+    // --- CONTROLES DE CADASTRO GERAL ---
+    function openTurmaModal() {
+      document.getElementById('turma-form-id').value = '';
+      document.getElementById('turma-form').reset();
+      document.getElementById('turma-flag-preview').innerHTML = '🏳️';
+
+      const select = document.getElementById('turma-form-grade');
+      if (activeShift === 'matutino') {
+        select.innerHTML = `<option value="8">8º Ano</option><option value="9">9º Ano</option>`;
+      } else {
+        select.innerHTML = `<option value="6">6º Ano</option><option value="7">7º Ano</option>`;
+      }
+
+      document.getElementById('turma-modal-title').innerText = "Nova Turma / Sala de Aula";
+      document.getElementById('turma-modal').classList.remove('hidden');
+    }
+
+    function closeTurmaModal() {
+      document.getElementById('turma-modal').classList.add('hidden');
+    }
+
+    function saveTurma(e) {
+      e.preventDefault();
+      const id = document.getElementById('turma-form-id').value;
+      const name = document.getElementById('turma-form-name').value.trim();
+      const country = document.getElementById('turma-form-country').value.trim();
+      const grade = document.getElementById('turma-form-grade').value;
+      const advisor = document.getElementById('turma-form-advisor').value.trim();
+      const color = document.getElementById('turma-form-color').value;
+
+      if (id) {
+        const t = state.turmas.find(turma => turma.id === id);
+        if (t) {
+          t.name = name; t.country = country; t.grade = grade; t.advisor = advisor; t.color = color;
+        }
+      } else {
+        state.turmas.push({
+          id: 't-' + Date.now(),
+          name, country, grade, advisor, color,
+          shift: activeShift
+        });
+      }
+
+      saveState();
+      closeTurmaModal();
+      showToast("Turma salva com sucesso!");
+    }
+
+    function editTurma(id) {
+      const t = state.turmas.find(turma => turma.id === id);
+      if (!t) return;
+
+      openTurmaModal();
+      document.getElementById('turma-form-id').value = t.id;
+      document.getElementById('turma-form-name').value = t.name;
+      document.getElementById('turma-form-country').value = t.country;
+      document.getElementById('turma-form-grade').value = t.grade;
+      document.getElementById('turma-form-advisor').value = t.advisor;
+      document.getElementById('turma-form-color').value = t.color;
+
+      updateModalFlagPreview(t.country);
+      document.getElementById('turma-modal-title').innerText = "Editar Turma / Sala de Aula";
+    }
+
+    function deleteTurma(id) {
+      openConfirmModal("Remover Turma", "Deseja excluir esta turma? Todos os alunos inscritos perderão suas filiações.", () => {
+        state.turmas = state.turmas.filter(t => t.id !== id);
+        state.alunos = state.alunos.filter(a => a.classId !== id);
+        state.confrontos = state.confrontos.filter(c => c.team1 !== id && c.team2 !== id);
+        saveState();
+        showToast("Turma e elos excluídos.");
+      });
+    }
+
+    function openModalidadeModal() {
+      document.getElementById('modalidade-form-id').value = '';
+      document.getElementById('modalidade-form').reset();
+      document.getElementById('modalidade-modal-title').innerText = "Nova Categoria de Esporte";
+      document.getElementById('modalidade-modal').classList.remove('hidden');
+    }
+
+    function closeModalidadeModal() {
+      document.getElementById('modalidade-modal').classList.add('hidden');
+    }
+
+    function saveModalidade(event) {
+      event.preventDefault();
+      const id = document.getElementById('modalidade-form-id').value;
+      const name = document.getElementById('modalidade-form-name').value.trim();
+      const icon = document.getElementById('modalidade-form-icon').value.trim();
+      const metricsStr = document.getElementById('modalidade-form-metrics').value;
+      const metrics = metricsStr ? metricsStr.split(',').map(m => m.trim()).filter(Boolean) : [];
+      const gender = document.getElementById('modalidade-form-gender').value;
+      const minPlayers = parseInt(document.getElementById('modalidade-form-min').value) || 2;
+      const maxPlayers = parseInt(document.getElementById('modalidade-form-max').value) || 12;
+      const minPlayersM = parseInt(document.getElementById('modalidade-form-min-m').value) || 0;
+      const minPlayersF = parseInt(document.getElementById('modalidade-form-min-f').value) || 0;
+      const pointsGold = parseInt(document.getElementById('modalidade-form-p-gold').value) || 10;
+      const pointsSilver = parseInt(document.getElementById('modalidade-form-p-silver').value) || 7;
+      const pointsBronze = parseInt(document.getElementById('modalidade-form-p-bronze').value) || 5;
+      const pointsParticipation = parseInt(document.getElementById('modalidade-form-p-part').value) || 2;
+      const system = document.getElementById('modalidade-form-system').value;
+      const duration = document.getElementById('modalidade-form-duration').value.trim();
+      const rulesText = document.getElementById('modalidade-form-rules').value.trim();
+
+      if (id) {
+        const m = state.modalidades.find(sport => sport.id === id);
+        if (m) {
+          m.name = name; m.icon = icon; m.metrics = metrics; m.gender = gender;
+          m.minPlayers = minPlayers; m.maxPlayers = maxPlayers;
+          m.minPlayersM = minPlayersM; m.minPlayersF = minPlayersF;
+          m.pointsGold = pointsGold; m.pointsSilver = pointsSilver; m.pointsBronze = pointsBronze;
+          m.pointsParticipation = pointsParticipation; m.system = system;
+          m.duration = duration; m.rulesText = rulesText;
+        }
+      } else {
+        state.modalidades.push({
+          id: 'sport-' + Date.now(),
+          name, icon, metrics, gender, minPlayers, maxPlayers, minPlayersM, minPlayersF,
+          pointsGold, pointsSilver, pointsBronze, pointsParticipation, system, duration, rulesText,
+          shift: activeShift
+        });
+      }
+
+      saveState();
+      closeModalidadeModal();
+      showToast("Categoria de esporte salva!");
+    }
+
+    // --- ESCOLA / ATLETAS ---
+    function editModalidade(id) {
+      const sp = state.modalidades.find(m => m.id === id);
+      if (!sp) return;
+
+      openModalidadeModal();
+      document.getElementById('modalidade-form-id').value = sp.id;
+      document.getElementById('modalidade-form-name').value = sp.name;
+      document.getElementById('modalidade-form-icon').value = sp.icon;
+      document.getElementById('modalidade-form-metrics').value = (sp.metrics || []).join(', ');
+      document.getElementById('modalidade-form-gender').value = sp.gender;
+      document.getElementById('modalidade-form-min').value = sp.minPlayers || 2;
+      document.getElementById('modalidade-form-max').value = sp.maxPlayers || 12;
+      document.getElementById('modalidade-form-min-m').value = sp.minPlayersM ?? 0;
+      document.getElementById('modalidade-form-min-f').value = sp.minPlayersF ?? 0;
+      document.getElementById('modalidade-form-p-gold').value = sp.pointsGold || 10;
+      document.getElementById('modalidade-form-p-silver').value = sp.pointsSilver || 7;
+      document.getElementById('modalidade-form-p-bronze').value = sp.pointsBronze || 5;
+      document.getElementById('modalidade-form-p-part').value = sp.pointsParticipation || 2;
+      document.getElementById('modalidade-form-system').value = sp.system;
+      document.getElementById('modalidade-form-duration').value = sp.duration;
+      document.getElementById('modalidade-form-rules').value = sp.rulesText || '';
+
+      document.getElementById('modalidade-modal-title').innerText = "Editar Categoria de Esporte";
+    }
+
+    function deleteModalidade(id) {
+      openConfirmModal("Excluir Esporte", "Excluir esta modalidade removerá todas as súmulas e dados de classificação de forma definitiva.", () => {
+        state.modalidades = state.modalidades.filter(m => m.id !== id);
+        state.alunos.forEach(al => {
+          if (al.sports) al.sports = al.sports.filter(sId => sId !== id);
+        });
+        saveState();
+        showToast("Modalidade excluída.");
+      });
+    }
+
+    function openStudentModal() {
+      document.getElementById('student-form-id').value = '';
+      document.getElementById('student-form').reset();
+
+      const activeTurmas = state.turmas.filter(t => t.shift === activeShift);
+      const select = document.getElementById('student-form-class');
+      select.innerHTML = activeTurmas.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+
+      document.getElementById('student-modal-title').innerText = "Novo Atleta";
+      document.getElementById('student-modal').classList.remove('hidden');
+    }
+
+    function closeStudentModal() {
+      document.getElementById('student-modal').classList.add('hidden');
+    }
+
+    function saveStudent(e) {
+      e.preventDefault();
+      const id = document.getElementById('student-form-id').value;
+      const name = document.getElementById('student-form-name').value.trim();
+      const gender = document.getElementById('student-form-gender').value;
+      const classId = document.getElementById('student-form-class').value;
+
+      if (id) {
+        const a = state.alunos.find(al => al.id === id);
+        if (a) {
+          a.name = name; a.gender = gender; a.classId = classId;
+        }
+      } else {
+        state.alunos.push({
+          id: 'std-' + Date.now(),
+          name, gender, classId,
+          shift: activeShift,
+          sports: []
+        });
+      }
+
+      saveState();
+      closeStudentModal();
+      showToast("Registro de atleta salvo!");
+    }
+
+    function editStudent(id) {
+      const a = state.alunos.find(al => al.id === id);
+      if (!a) return;
+
+      openStudentModal();
+      document.getElementById('student-form-id').value = a.id;
+      document.getElementById('student-form-name').value = a.name;
+      document.getElementById('student-form-gender').value = a.gender;
+      document.getElementById('student-form-class').value = a.classId;
+
+      document.getElementById('student-modal-title').innerText = "Editar Atleta";
+    }
+
+    function deleteStudent(id) {
+      const a = state.alunos.find(al => al.id === id);
+      if (!a) return;
+
+      openConfirmModal("Remover Estudante", `Deseja realmente excluir permanentemente o cadastro de ${a.name}?`, () => {
+        state.alunos = state.alunos.filter(al => al.id !== id);
+        saveState();
+        showToast("Atleta removido.");
+      });
+    }
+
+    function toggleStudentGenderDirect(studentId) {
+      const athlete = state.alunos.find(a => a.id === studentId);
+      if (!athlete) return;
+      athlete.gender = athlete.gender === 'M' ? 'F' : 'M';
+      saveState();
+      showToast(`Gênero de ${athlete.name} alterado reativamente para ${athlete.gender}!`);
+    }
+
+    function toggleStudentSport(studentId, sportId) {
+      const athlete = state.alunos.find(a => a.id === studentId);
+      const sport = state.modalidades.find(m => m.id === sportId);
+      if (!athlete || !sport) return;
+
+      if (!athlete.sports) athlete.sports = [];
+      const idx = athlete.sports.indexOf(sportId);
+
+      const maxLimit = state.configuracoes.maxSportsPerStudent ?? 2;
+
+      if (idx > -1) {
+        athlete.sports.splice(idx, 1);
+        saveState();
+        showToast("Inscrição cancelada.");
+      } else {
+        if (athlete.sports.length >= maxLimit) {
+          openAlertModal("Limite Atingido", `Este estudante atingiu o limite de ${maxLimit} modalidades por aluno.`);
+          return;
+        }
+
+        const teamCount = state.alunos.filter(a => a.classId === athlete.classId && a.sports && a.sports.includes(sportId)).length;
+        if (teamCount >= (sport.maxPlayers || 12)) {
+          openAlertModal("Vagas ESGOTADAS", "A turma correspondente já preencheu a quantidade máxima de inscritos.");
+          return;
+        }
+
+        athlete.sports.push(sportId);
+        saveState();
+        showToast("Inscrição efetuada com sucesso!");
+      }
+    }
+
+    // --- IMPORTADOR EM MASSA COM IDENTIFICAÇÃO DE GÊNERO AUTOMÁTICA ---
+    function submitBulkImport() {
+      const targetClass = document.getElementById('import-class-target').value;
+      const text = document.getElementById('import-bulk-text').value.trim();
+
+      if (targetClass === 'all' || !targetClass) {
+        openAlertModal("Importação Inválida", "Por favor, selecione uma turma de destino.");
+        return;
+      }
+      if (!text) {
+        openAlertModal("Dados Faltando", "A caixa de texto de importação está vazia.");
+        return;
+      }
+
+      const lines = text.split('\n');
+      let count = 0;
+
+      lines.forEach((line, idx) => {
+        const name = line.trim();
+        if (name.length > 2 && count < 40) {
+          const detectedGender = detectGenderFromName(name);
+          state.alunos.push({
+            id: `std-bulk-${Date.now()}-${idx}`,
+            name, gender: detectedGender,
+            classId: targetClass,
+            shift: activeShift,
+            sports: []
+          });
+          count++;
+        }
+      });
+
+      saveState();
+      document.getElementById('import-bulk-text').value = '';
+      showToast(`${count} atletas importados em lote com gênero detectado automaticamente!`);
+    }
+
+    // --- ALGORITMOS DE SORTEIO ---
+    function triggerAutoDraw(sportId) {
+      const sport = state.modalidades.find(m => m.id === sportId);
+      if (!sport) return;
+
+      const activeTurmasInSport = state.turmas.filter(t => {
+        if (t.shift !== activeShift) return false;
+        const count = state.alunos.filter(a => a.classId === t.id && a.sports && a.sports.includes(sportId)).length;
+        return count >= (sport.minPlayers || 2);
+      });
+
+      if (activeTurmasInSport.length < 2) {
+        openAlertModal("Sorteio Bloqueado", "É necessário ao menos 2 turmas qualificadas para efetuar o sorteio.");
+        return;
+      }
+
+      const generated = [];
+      const gradeLeft = activeShift === 'matutino' ? '8' : '6';
+      const gradeRight = activeShift === 'matutino' ? '9' : '7';
+
+      let leftGroup = activeTurmasInSport.filter(t => t.grade === gradeLeft).map(t => t.id).sort(() => Math.random() - 0.5);
+      let rightGroup = activeTurmasInSport.filter(t => t.grade === gradeRight).map(t => t.id).sort(() => Math.random() - 0.5);
+
+      const sf1Id = `match-sf1-${sportId}`;
+      const sf2Id = `match-sf2-${sportId}`;
+      const finalMatchId = `match-central-final-${sportId}`;
+      const thirdMatchId = `match-central-third-${sportId}`;
+
+      if (sport.system === 'mata_mata') {
+        let leftSupT1 = 'W.O.', leftSupT2 = 'W.O.', leftInfT1 = 'W.O.', leftInfT2 = 'W.O.';
+        let rightSupT1 = 'W.O.', rightSupT2 = 'W.O.', rightInfT1 = 'W.O.', rightInfT2 = 'W.O.';
+
+        if (leftGroup.length === 1) {
+          leftSupT1 = leftGroup[0];
+        } else if (leftGroup.length === 2) {
+          leftSupT1 = leftGroup[0];
+          leftInfT1 = leftGroup[1];
+        } else if (leftGroup.length === 3) {
+          leftSupT1 = leftGroup[0];
+          leftSupT2 = leftGroup[2];
+          leftInfT1 = leftGroup[1];
+        } else if (leftGroup.length >= 4) {
+          leftSupT1 = leftGroup[0];
+          leftSupT2 = leftGroup[2];
+          leftInfT1 = leftGroup[1];
+          leftInfT2 = leftGroup[3];
+        }
+
+        if (rightGroup.length === 1) {
+          rightSupT1 = rightGroup[0];
+        } else if (rightGroup.length === 2) {
+          rightSupT1 = rightGroup[0];
+          rightInfT1 = rightGroup[1];
+        } else if (rightGroup.length === 3) {
+          rightSupT1 = rightGroup[0];
+          rightSupT2 = rightGroup[2];
+          rightInfT1 = rightGroup[1];
+        } else if (rightGroup.length >= 4) {
+          rightSupT1 = rightGroup[0];
+          rightSupT2 = rightGroup[2];
+          rightInfT1 = rightGroup[1];
+          rightInfT2 = rightGroup[3];
+        }
+
+        generated.push({
+          id: `match-left-sup-${sportId}`, sportId, stage: `Superior Esquerdo`,
+          team1: leftSupT1, team2: leftSupT2, score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+          winnerTo: { matchId: sf1Id, slot: 'team1' }
+        });
+        generated.push({
+          id: `match-left-inf-${sportId}`, sportId, stage: `Inferior Esquerdo`,
+          team1: leftInfT1, team2: leftInfT2, score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+          winnerTo: { matchId: sf2Id, slot: 'team1' }
+        });
+
+        generated.push({
+          id: `match-right-sup-${sportId}`, sportId, stage: `Superior Direito`,
+          team1: rightSupT1, team2: rightSupT2, score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+          winnerTo: { matchId: sf1Id, slot: 'team2' }
+        });
+        generated.push({
+          id: `match-right-inf-${sportId}`, sportId, stage: `Inferior Direito`,
+          team1: rightInfT1, team2: rightInfT2, score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+          winnerTo: { matchId: sf2Id, slot: 'team2' }
+        });
+
+        generated.push({
+          id: sf1Id, sportId, stage: 'Cruzamento Central - Semifinal 1',
+          team1: '🏳️ Vencedor Superior Esquerdo', team2: '🏳️ Vencedor Superior Direito', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+          winnerTo: { matchId: finalMatchId, slot: 'team1' },
+          loserTo: { matchId: thirdMatchId, slot: 'team1' }
+        });
+
+        generated.push({
+          id: sf2Id, sportId, stage: 'Cruzamento Central - Semifinal 2',
+          team1: '🏳️ Vencedor Inferior Esquerdo', team2: '🏳️ Vencedor Inferior Direito', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+          winnerTo: { matchId: finalMatchId, slot: 'team2' },
+          loserTo: { matchId: thirdMatchId, slot: 'team2' }
+        });
+
+        generated.push({
+          id: finalMatchId, sportId, stage: 'Grande Final (Cruzamento Geral)',
+          team1: '🏳️ Campeão Semifinal 1', team2: '🏳️ Campeão Semifinal 2', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {}
+        });
+
+        generated.push({
+          id: thirdMatchId, sportId, stage: 'Disputa de 3º Lugar (Cruzamento Geral)',
+          team1: '🏳️ Perdedor Semifinal 1', team2: '🏳️ Perdedor Semifinal 2', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {}
+        });
+
+        showToast("Chaves de Mata-Mata Simples desenhadas!");
+
+      } 
+      else if (sport.system === 'double_elimination') {
+        if (leftGroup.length > 0) {
+          while (leftGroup.length < 8) leftGroup.push('W.O.');
+        }
+        if (rightGroup.length > 0) {
+          while (rightGroup.length < 8) rightGroup.push('W.O.');
+        }
+
+        if (leftGroup.length === 8) {
+          generated.push({
+            id: `match-left-q1-${sportId}`, sportId, stage: `Esq R1 - Jogo 1`,
+            team1: leftGroup[0], team2: leftGroup[7], score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-left-sf1-${sportId}`, slot: 'team1' },
+            loserTo: { matchId: `match-left-lq1-${sportId}`, slot: 'team1' }
+          });
+          generated.push({
+            id: `match-left-q2-${sportId}`, sportId, stage: `Esq R1 - Jogo 2`,
+            team1: leftGroup[3], team2: leftGroup[4], score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-left-sf1-${sportId}`, slot: 'team2' },
+            loserTo: { matchId: `match-left-lq1-${sportId}`, slot: 'team2' }
+          });
+          generated.push({
+            id: `match-left-q3-${sportId}`, sportId, stage: `Esq R1 - Jogo 3`,
+            team1: leftGroup[1], team2: leftGroup[6], score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-left-sf2-${sportId}`, slot: 'team1' },
+            loserTo: { matchId: `match-left-lq2-${sportId}`, slot: 'team1' }
+          });
+          generated.push({
+            id: `match-left-q4-${sportId}`, sportId, stage: `Esq R1 - Jogo 4`,
+            team1: leftGroup[2], team2: leftGroup[5], score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-left-sf2-${sportId}`, slot: 'team2' },
+            loserTo: { matchId: `match-left-lq2-${sportId}`, slot: 'team2' }
+          });
+
+          generated.push({
+            id: `match-left-sf1-${sportId}`, sportId, stage: `Esq R2 - Semifinal 1`,
+            team1: 'Vencedor J1', team2: 'Vencedor J2', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-left-f-${sportId}`, slot: 'team1' },
+            loserTo: { matchId: `match-left-lsf1-${sportId}`, slot: 'team1' }
+          });
+          generated.push({
+            id: `match-left-sf2-${sportId}`, sportId, stage: `Esq R2 - Semifinal 2`,
+            team1: 'Vencedor J3', team2: 'Vencedor J4', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-left-f-${sportId}`, slot: 'team2' },
+            loserTo: { matchId: `match-left-lsf2-${sportId}`, slot: 'team1' }
+          });
+
+          generated.push({
+            id: `match-left-lq1-${sportId}`, sportId, stage: `Esq Repescagem - Rodada 1A`,
+            team1: 'Perdedor J1', team2: 'Perdedor J2', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-left-lsf1-${sportId}`, slot: 'team2' }
+          });
+          generated.push({
+            id: `match-left-lq2-${sportId}`, sportId, stage: `Esq Repescagem - Rodada 1B`,
+            team1: 'Perdedor J3', team2: 'Perdedor J4', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-left-lsf2-${sportId}`, slot: 'team2' }
+          });
+
+          generated.push({
+            id: `match-left-lsf1-${sportId}`, sportId, stage: `Esq Repescagem - Semifinal A`,
+            team1: 'Perdedor SF1', team2: 'Vencedor Rep 1A', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-left-lf-${sportId}`, slot: 'team1' }
+          });
+          generated.push({
+            id: `match-left-lsf2-${sportId}`, sportId, stage: `Esq Repescagem - Semifinal B`,
+            team1: 'Perdedor SF2', team2: 'Vencedor Rep 1B', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-left-lf-${sportId}`, slot: 'team2' }
+          });
+
+          generated.push({
+            id: `match-left-lf-${sportId}`, sportId, stage: `Esq Repescagem - Final`,
+            team1: 'Vencedor Rep A', team2: 'Vencedor Rep B', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-left-lff-${sportId}`, slot: 'team2' }
+          });
+
+          generated.push({
+            id: `match-left-f-${sportId}`, sportId, stage: `Chave ${gradeLeft}º Ano - Final`,
+            team1: 'Vencedor SF1', team2: 'Vencedor SF2', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: sf1Id, slot: 'team1' },
+            loserTo: { matchId: `match-left-lff-${sportId}`, slot: 'team1' }
+          });
+
+          generated.push({
+            id: `match-left-lff-${sportId}`, sportId, stage: `Chave ${gradeLeft}º Ano - Repescagem Final`,
+            team1: 'Perdedor Final Sup', team2: 'Vencedor Rep Final', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: sf2Id, slot: 'team1' }
+          });
+        }
+
+        if (rightGroup.length === 8) {
+          generated.push({
+            id: `match-right-q1-${sportId}`, sportId, stage: `Dir R1 - Jogo 1`,
+            team1: rightGroup[0], team2: rightGroup[7], score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-right-sf1-${sportId}`, slot: 'team1' },
+            loserTo: { matchId: `match-right-lq1-${sportId}`, slot: 'team1' }
+          });
+          generated.push({
+            id: `match-right-q2-${sportId}`, sportId, stage: `Dir R1 - Jogo 2`,
+            team1: rightGroup[3], team2: rightGroup[4], score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-right-sf1-${sportId}`, slot: 'team2' },
+            loserTo: { matchId: `match-right-lq1-${sportId}`, slot: 'team2' }
+          });
+          generated.push({
+            id: `match-right-q3-${sportId}`, sportId, stage: `Dir R1 - Jogo 3`,
+            team1: rightGroup[1], team2: rightGroup[6], score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-right-sf2-${sportId}`, slot: 'team1' },
+            loserTo: { matchId: `match-right-lq2-${sportId}`, slot: 'team1' }
+          });
+          generated.push({
+            id: `match-right-q4-${sportId}`, sportId, stage: `Dir R1 - Jogo 4`,
+            team1: rightGroup[2], team2: rightGroup[5], score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-right-sf2-${sportId}`, slot: 'team2' },
+            loserTo: { matchId: `match-right-lq2-${sportId}`, slot: 'team2' }
+          });
+
+          generated.push({
+            id: `match-right-sf1-${sportId}`, sportId, stage: `Dir R2 - Semifinal 1`,
+            team1: 'Vencedor J1', team2: 'Vencedor J2', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-right-f-${sportId}`, slot: 'team1' },
+            loserTo: { matchId: `match-right-lsf1-${sportId}`, slot: 'team1' }
+          });
+          generated.push({
+            id: `match-right-sf2-${sportId}`, sportId, stage: `Dir R2 - Semifinal 2`,
+            team1: 'Vencedor J3', team2: 'Vencedor J4', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-right-f-${sportId}`, slot: 'team2' },
+            loserTo: { matchId: `match-right-lsf2-${sportId}`, slot: 'team1' }
+          });
+
+          generated.push({
+            id: `match-right-lq1-${sportId}`, sportId, stage: `Dir Repescagem - Rodada 1A`,
+            team1: 'Perdedor J1', team2: 'Perdedor J2', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-right-lsf1-${sportId}`, slot: 'team2' }
+          });
+          generated.push({
+            id: `match-right-lq2-${sportId}`, sportId, stage: `Dir Repescagem - Rodada 1B`,
+            team1: 'Perdedor J3', team2: 'Perdedor J4', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-right-lsf2-${sportId}`, slot: 'team2' }
+          });
+
+          generated.push({
+            id: `match-right-lsf1-${sportId}`, sportId, stage: `Dir Repescagem - Semifinal A`,
+            team1: 'Perdedor SF1', team2: 'Vencedor Rep 1A', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-right-lf-${sportId}`, slot: 'team1' }
+          });
+          generated.push({
+            id: `match-right-lsf2-${sportId}`, sportId, stage: `Dir Repescagem - Semifinal B`,
+            team1: 'Perdedor SF2', team2: 'Vencedor Rep 1B', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-right-lf-${sportId}`, slot: 'team2' }
+          });
+
+          generated.push({
+            id: `match-right-lf-${sportId}`, sportId, stage: `Dir Repescagem - Final`,
+            team1: 'Vencedor Rep A', team2: 'Vencedor Rep B', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: `match-right-lff-${sportId}`, slot: 'team2' }
+          });
+
+          generated.push({
+            id: `match-right-f-${sportId}`, sportId, stage: `Chave ${gradeRight}º Ano - Final`,
+            team1: 'Vencedor SF1', team2: 'Vencedor SF2', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: sf1Id, slot: 'team2' }, 
+            loserTo: { matchId: `match-right-lff-${sportId}`, slot: 'team1' }
+          });
+
+          generated.push({
+            id: `match-right-lff-${sportId}`, sportId, stage: `Chave ${gradeRight}º Ano - Repescagem Final`,
+            team1: 'Perdedor Final Sup', team2: 'Vencedor Rep Final', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+            winnerTo: { matchId: sf2Id, slot: 'team2' } 
+          });
+        }
+
+        generated.push({
+          id: sf1Id, sportId, stage: 'Cruzamento Central - Semifinal 1',
+          team1: 'Vencedor Superior Esquerda', team2: 'Vencedor Superior Direita', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+          winnerTo: { matchId: finalMatchId, slot: 'team1' },
+          loserTo: { matchId: thirdMatchId, slot: 'team1' }
+        });
+
+        generated.push({
+          id: sf2Id, sportId, stage: 'Cruzamento Central - Semifinal 2',
+          team1: 'Vencedor Inferior Esquerda', team2: 'Vencedor Inferior Direita', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {},
+          winnerTo: { matchId: finalMatchId, slot: 'team2' },
+          loserTo: { matchId: thirdMatchId, slot: 'team2' }
+        });
+
+        generated.push({
+          id: finalMatchId, sportId, stage: 'Grande Finalíssima (Ouro/Prata)',
+          team1: 'Vencedor Semifinal 1', team2: 'Vencedor Semifinal 2', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {}
+        });
+
+        generated.push({
+          id: thirdMatchId, sportId, stage: 'Disputa do 3º Lugar (Bronze)',
+          team1: 'Perdedor Semifinal 1', team2: 'Perdedor Semifinal 2', score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Central', shift: activeShift, attendance: [], playerStats: {}
+        });
+
+        showToast("Chaves de dupla eliminação desenhadas!");
+      } 
+      else {
+        const enrolled = activeTurmasInSport.map(t => t.id);
+        sport.enrolledClasses = enrolled;
+        
+        for (let i = 0; i < enrolled.length; i++) {
+          for (let j = i + 1; j < enrolled.length; j++) {
+            generated.push({
+              id: `match-gp-${enrolled[i]}-${enrolled[j]}-${Date.now()}`,
+              sportId,
+              stage: 'Fase de Grupos (Pontos Corridos)',
+              team1: enrolled[i], team2: enrolled[j], score1: 0, score2: 0, status: 'scheduled', date: '', time: '', location: 'Quadra Lateral', shift: activeShift, attendance: [], playerStats: {}
+            });
+          }
+        }
+        showToast("Tabela de Pontos Corridos estruturada!");
+      }
+
+      state.confrontos = state.confrontos.filter(c => c.sportId !== sportId).concat(generated);
+      autoResolveAllWOs();
+      saveState();
+    }
+
+    function autoResolveAllWOs() {
+      let modified = false;
+      state.confrontos.forEach(m => {
+        if (m.status === 'scheduled') {
+          const t1WO = m.team1 === 'W.O.';
+          const t2WO = m.team2 === 'W.O.';
+
+          if (t1WO && t2WO) {
+            m.status = 'finished'; m.score1 = 0; m.score2 = 0;
+            modified = true;
+          } else if (t1WO) {
+            m.status = 'finished'; m.score1 = 0; m.score2 = 1;
+            propagateMatchAdvance(m, m.team2, m.team1);
+            modified = true;
+          } else if (t2WO) {
+            m.status = 'finished'; m.score1 = 1; m.score2 = 0;
+            propagateMatchAdvance(m, m.team1, m.team2);
+            modified = true;
+          }
+        }
+      });
+
+      if (modified) {
+        saveState();
+        autoResolveAllWOs();
+      }
+    }
+
+    function propagateMatchAdvance(match, winner, loser) {
+      state.confrontos.forEach(m => {
+        if (match.winnerTo && match.winnerTo.matchId === m.id) {
+          m[match.winnerTo.slot] = winner;
+        }
+        if (match.loserTo && match.loserTo.matchId === m.id) {
+          m[match.loserTo.slot] = loser;
+        }
+      });
+    }
+
+    // --- SÚMULAS ---
+    function openSumulaModal(matchId) {
+      const match = state.confrontos.find(m => m.id === matchId);
+      if (!match) return;
+
+      const sport = state.modalidades.find(sp => sp.id === match.sportId) || { name: 'Geral', icon: '🏆', metrics: [] };
+      const t1 = state.turmas.find(t => t.id === match.team1) || { name: match.team1, advisor: 'Conselheiro Livre' };
+      const t2 = state.turmas.find(t => t.id === match.team2) || { name: match.team2, advisor: 'Conselheiro Livre' };
+
+      document.getElementById('sumula-modal-subtitle').innerText = sport.name;
+      
+      const body = document.getElementById('sumula-modal-body');
+      const footer = document.getElementById('sumula-modal-footer');
+      
+      const isMesario = currentUser && (currentUser.role === 'mesario' || currentUser.role === 'admin');
+      const metricsList = sport.metrics || state.configuracoes.matchMetrics || ['Faltas'];
+
+      let bodyHTML = '';
+
+      bodyHTML += `
+        <div class="space-y-4">
+          <div class="bg-slate-900 p-3 rounded-2xl border border-slate-800 text-left">
+            <span class="text-xs font-black text-slate-200 uppercase block">Equipe A: ${t1.name}</span>
+            <span class="text-[10px] text-slate-500 block font-semibold">Conselheiro: ${t1.advisor}</span>
+          </div>
+          <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+      `;
+      const team1Players = state.alunos.filter(a => a.classId === match.team1 && a.sports && a.sports.includes(match.sportId));
+      team1Players.forEach(athlete => {
+        const stats = match.playerStats?.[athlete.id] || {};
+        const isPresent = (match.attendance || []).includes(athlete.id);
+
+        bodyHTML += `
+          <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 flex flex-col space-y-2 text-left">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-300">${athlete.name}</span>
+              ${isMesario ? `
+                <button onclick="window.toggleAttendance('${match.id}', '${athlete.id}')" class="px-2.5 py-1 rounded-xl text-[10px] font-bold ${isPresent ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 shadow-md' : 'bg-slate-950 text-slate-500'}">
+                  ${isPresent ? '✔️ Presente' : '❌ Falta'}
+                </button>
+              ` : `
+                <span class="text-[10px] font-bold ${isPresent ? 'text-emerald-400' : 'text-slate-500'}">
+                  ${isPresent ? 'Presente' : 'Ausente'}
+                </span>
+              `}
+            </div>
+            ${isPresent ? `
+              <div class="flex flex-wrap gap-1.5 pt-1 border-t border-slate-800/40">
+                ${metricsList.map(met => {
+                  const val = stats[met] || 0;
+                  return `
+                    <div class="bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-800 flex items-center gap-1 text-[10px]">
+                      <span class="text-slate-400">${met}: <strong class="text-amber-400 font-bold">${val}</strong></span>
+                      ${isMesario ? `
+                        <div class="flex gap-1 pl-1 border-l border-slate-800 ml-1 font-bold">
+                          <button onclick="window.updatePlayerStat('${match.id}', '${athlete.id}', '${met}', -1)" class="text-slate-500 hover:text-white px-0.5">-</button>
+                          <button onclick="window.updatePlayerStat('${match.id}', '${athlete.id}', '${met}', 1)" class="text-slate-400 hover:text-white px-0.5">+</button>
+                        </div>
+                      ` : ''}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            ` : '<span class="text-[10px] italic text-slate-600">Falta registrada.</span>'}
+          </div>
+        `;
+      });
+      if (team1Players.length === 0) {
+        bodyHTML += `<span class="text-xs italic text-slate-500 block text-center py-4">Sem atletas matriculados nesta turma.</span>`;
+      }
+      bodyHTML += `</div></div>`;
+
+      bodyHTML += `
+        <div class="space-y-4">
+          <div class="bg-slate-900 p-3 rounded-2xl border border-slate-800 text-left">
+            <span class="text-xs font-black text-slate-200 uppercase block">Equipe B: ${t2.name}</span>
+            <span class="text-[10px] text-slate-500 block font-semibold">Conselheiro: ${t2.advisor}</span>
+          </div>
+          <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+      `;
+      const team2Players = state.alunos.filter(a => a.classId === match.team2 && a.sports && a.sports.includes(match.sportId));
+      team2Players.forEach(athlete => {
+        const stats = match.playerStats?.[athlete.id] || {};
+        const isPresent = (match.attendance || []).includes(athlete.id);
+
+        bodyHTML += `
+          <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 flex flex-col space-y-2 text-left">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-300">${athlete.name}</span>
+              ${isMesario ? `
+                <button onclick="window.toggleAttendance('${match.id}', '${athlete.id}')" class="px-2.5 py-1 rounded-xl text-[10px] font-bold ${isPresent ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 shadow-md' : 'bg-slate-950 text-slate-500'}">
+                  ${isPresent ? '✔️ Presente' : '❌ Falta'}
+                </button>
+              ` : `
+                <span class="text-[10px] font-bold ${isPresent ? 'text-emerald-400' : 'text-slate-500'}">
+                  ${isPresent ? 'Presente' : 'Ausente'}
+                </span>
+              `}
+            </div>
+            ${isPresent ? `
+              <div class="flex flex-wrap gap-1.5 pt-1 border-t border-slate-800/40">
+                ${metricsList.map(met => {
+                  const val = stats[met] || 0;
+                  return `
+                    <div class="bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-800 flex items-center gap-1 text-[10px]">
+                      <span class="text-slate-400">${met}: <strong class="text-amber-400 font-bold">${val}</strong></span>
+                      ${isMesario ? `
+                        <div class="flex gap-1 pl-1 border-l border-slate-800 ml-1 font-bold">
+                          <button onclick="window.updatePlayerStat('${match.id}', '${athlete.id}', '${met}', -1)" class="text-slate-500 hover:text-white px-0.5">-</button>
+                          <button onclick="window.updatePlayerStat('${match.id}', '${athlete.id}', '${met}', 1)" class="text-slate-400 hover:text-white px-0.5">+</button>
+                        </div>
+                      ` : ''}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            ` : '<span class="text-[10px] italic text-slate-600">Falta registrada.</span>'}
+          </div>
+        `;
+      });
+      if (team2Players.length === 0) {
+        bodyHTML += `<span class="text-xs italic text-slate-500 block text-center py-4">Sem atletas matriculados nesta turma.</span>`;
+      }
+      bodyHTML += `</div></div>`;
+
+      body.innerHTML = bodyHTML;
+      footer.innerHTML = `<button onclick="window.closeSumulaModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl text-slate-300 shadow">Fechar Súmula</button>`;
+
+      document.getElementById('sumula-modal').classList.remove('hidden');
+    }
+
+    function closeSumulaModal() {
+      document.getElementById('sumula-modal').classList.add('hidden');
+    }
+
+    function toggleAttendance(matchId, studentId) {
+      const match = state.confrontos.find(m => m.id === matchId);
+      if (!match) return;
+
+      if (!match.attendance) match.attendance = [];
+      const idx = match.attendance.indexOf(studentId);
+
+      if (idx > -1) {
+        match.attendance.splice(idx, 1);
+      } else {
+        match.attendance.push(studentId);
+      }
+
+      saveState();
+      openSumulaModal(matchId);
+    }
+
+    function updatePlayerStat(matchId, studentId, metric, val) {
+      const match = state.confrontos.find(m => m.id === matchId);
+      if (!match) return;
+
+      if (!match.playerStats) match.playerStats = {};
+      if (!match.playerStats[studentId]) match.playerStats[studentId] = {};
+      
+      const current = match.playerStats[studentId][metric] || 0;
+      match.playerStats[studentId][metric] = Math.max(0, current + val);
+
+      saveState();
+      openSumulaModal(matchId);
+    }
+
+    // --- PLACARES ---
+    function openMatchScoreModal(matchId) {
+      const match = state.confrontos.find(m => m.id === matchId);
+      if (!match) return;
+
+      const t1 = state.turmas.find(t => t.id === match.team1) || { name: match.team1 };
+      const t2 = state.turmas.find(t => t.id === match.team2) || { name: match.team2 };
+
+      document.getElementById('match-form-id').value = match.id;
+      document.getElementById('match-form-team1-label').innerText = t1.name;
+      document.getElementById('match-form-team2-label').innerText = t2.name;
+      document.getElementById('match-form-score1').value = match.score1 || 0;
+      document.getElementById('match-form-score2').value = match.score2 || 0;
+      document.getElementById('match-form-date').value = match.date || '';
+      document.getElementById('match-form-time').value = match.time || '';
+      document.getElementById('match-form-location').value = match.location || '';
+      
+      setMatchFormStatus(match.status || 'scheduled');
+
+      const tieContainer = document.getElementById('match-form-tie-container');
+      const tieSelector = document.getElementById('match-form-tie-winner');
+      
+      if (match.stage !== 'Fase de Grupos (Pontos Corridos)') {
+        tieContainer.classList.remove('hidden');
+        tieSelector.innerHTML = `
+          <option value="${match.team1}">${t1.name}</option>
+          <option value="${match.team2}">${t2.name}</option>
+        `;
+        tieSelector.value = match.tieWinner || match.team1;
+      } else {
+        tieContainer.classList.add('hidden');
+      }
+
+      document.getElementById('match-modal').classList.remove('hidden');
+    }
+
+    function setMatchFormStatus(status) {
+      document.getElementById('match-form-status-val').value = status;
+      const btnSch = document.getElementById('match-status-btn-scheduled');
+      const btnFin = document.getElementById('match-status-btn-finished');
+
+      if (status === 'finished') {
+        btnSch.className = "flex-1 py-1.5 rounded-lg text-xs font-bold bg-slate-950 text-slate-500";
+        btnFin.className = "flex-1 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow";
+      } else {
+        btnSch.className = "flex-1 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow";
+        btnFin.className = "flex-1 py-1.5 rounded-lg text-xs font-bold bg-slate-950 text-slate-500";
+      }
+    }
+
+    function closeMatchModal() {
+      document.getElementById('match-modal').classList.add('hidden');
+    }
+
+    function saveMatchScore(e) {
+      e.preventDefault();
+      const id = document.getElementById('match-form-id').value;
+      const match = state.confrontos.find(m => m.id === id);
+      if (!match) return;
+
+      const score1 = parseInt(document.getElementById('match-form-score1').value) || 0;
+      const score2 = parseInt(document.getElementById('match-form-score2').value) || 0;
+      const date = document.getElementById('match-form-date').value;
+      const time = document.getElementById('match-form-time').value;
+      const location = document.getElementById('match-form-location').value.trim();
+      const status = document.getElementById('match-form-status-val').value;
+
+      match.score1 = score1;
+      match.score2 = score2;
+      match.date = date;
+      match.time = time;
+      match.location = location;
+      match.status = status;
+
+      let winner = '';
+      let loser = '';
+
+      if (score1 > score2) {
+        winner = match.team1; loser = match.team2;
+      } else if (score2 > score1) {
+        winner = match.team2; loser = match.team1;
+      } else {
+        const tw = document.getElementById('match-form-tie-winner').value;
+        winner = tw;
+        loser = tw === match.team1 ? match.team2 : match.team1;
+        match.tieWinner = tw;
+      }
+
+      if (status === 'finished') {
+        propagateMatchAdvance(match, winner, loser);
+      }
+
+      saveState();
+      closeMatchModal();
+      showToast("Resultado atualizado!");
+      autoResolveAllWOs();
+    }
+
+    // --- VISUALIZADOR DE CHAVES ---
+    function setBracketWing(wing) {
+      activeBracketWing = wing;
+      if (activeBracketSportId) {
+        openBracketModal(activeBracketSportId);
+      }
+    }
+
+    function openBracketModal(sportId) {
+      const sport = state.modalidades.find(m => m.id === sportId);
+      if (!sport) return;
+
+      activeBracketSportId = sportId;
+
+      const titleEl = document.getElementById('bracket-modal-sport-title');
+      const iconEl = document.getElementById('bracket-modal-sport-icon');
+      if (titleEl) titleEl.innerText = sport.name;
+      if (iconEl) iconEl.innerText = sport.icon || '🏆';
+      
+      const renderContainer = document.getElementById('bracket-modal-render-container');
+      const selectorContainer = document.getElementById('bracket-view-selector-container');
+      
+      if (!renderContainer) return;
+      renderContainer.innerHTML = ''; 
+
+      if (selectorContainer) {
+        if (sport.system === 'grupo_unico') {
+          selectorContainer.innerHTML = ''; 
+        } else {
+          selectorContainer.innerHTML = `
+            <button onclick="window.setBracketWing('all')" class="px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${activeBracketWing === 'all' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900 border-slate-800 text-slate-400'}">Todas as Chaves</button>
+            <button onclick="window.setBracketWing('left')" class="px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${activeBracketWing === 'left' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900 border-slate-800 text-slate-400'}">Ala Esquerda (${activeShift === 'matutino' ? '8º' : '6º'} Ano)</button>
+            <button onclick="window.setBracketWing('right')" class="px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${activeBracketWing === 'right' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900 border-slate-800 text-slate-400'}">Ala Direita (${activeShift === 'matutino' ? '9º' : '7º'} Ano)</button>
+            <button onclick="window.setBracketWing('center')" class="px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${activeBracketWing === 'center' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900 border-slate-800 text-slate-400'}">Fase Central</button>
+          `;
+        }
+      }
+
+      let html = '';
+      const sportMatches = state.confrontos.filter(m => m.sportId === sportId);
+
+      const leftGrade = activeShift === 'matutino' ? '8' : '6';
+      const rightGrade = activeShift === 'matutino' ? '9' : '7';
+
+      if (sportMatches.length === 0) {
+        const validTurmas = state.turmas.filter(t => {
+          if (t.shift !== activeShift) return false;
+          const count = state.alunos.filter(a => a.classId === t.id && a.sports && a.sports.includes(sportId)).length;
+          return count >= (sport.minPlayers || 2);
+        });
+
+        const invalidTurmas = state.turmas.filter(t => {
+          if (t.shift !== activeShift) return false;
+          const count = state.alunos.filter(a => a.classId === t.id && a.sports && a.sports.includes(sportId)).length;
+          return count > 0 && count < (sport.minPlayers || 2);
+        });
+
+        const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'admin2');
+
+        html = `
+          <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 text-center space-y-6 max-w-xl mx-auto my-4">
+            <div class="bg-amber-500/10 text-amber-400 w-12 h-12 rounded-full flex items-center justify-center mx-auto border border-amber-500/20">
+              <i class="fa-solid fa-hourglass-start text-xl animate-spin"></i>
+            </div>
+            
+            <div class="space-y-2">
+              <h4 class="font-extrabold text-sm text-slate-200 uppercase tracking-wide">Aguardando Sorteio da Tabela</h4>
+              <p class="text-xs text-slate-400 leading-relaxed">As chaves do campeonato ainda não foram geradas por um organizador.</p>
+            </div>
+
+            <div class="space-y-3 text-left border-t border-slate-800 pt-4">
+              <span class="text-[10px] font-black uppercase text-indigo-400 tracking-wider">Delegações Qualificadas (${validTurmas.length}):</span>
+              ${validTurmas.length > 0 ? `
+                <div class="grid grid-cols-2 gap-2">
+                  ${validTurmas.map(t => `
+                    <div class="bg-slate-950 p-2 rounded-xl border border-slate-800 flex items-center justify-between">
+                      <span class="text-xs font-semibold text-slate-300 truncate">${getCountryFlagHTML(t.country)} ${t.name}</span>
+                      <span class="text-[9px] bg-emerald-950/20 text-emerald-400 font-bold px-1.5 py-0.5 rounded">Apto</span>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `
+                <span class="text-xs text-slate-500 italic block">Nenhuma turma com quórum mínimo no momento.</span>
+              `}
+
+              ${invalidTurmas.length > 0 ? `
+                <span class="text-[10px] font-black uppercase text-rose-400 tracking-wider block mt-3">Salas Incompletas (${invalidTurmas.length}):</span>
+                <div class="space-y-1.5">
+                  ${invalidTurmas.map(t => {
+                    const count = state.alunos.filter(a => a.classId === t.id && a.sports && a.sports.includes(sportId)).length;
+                    return `
+                      <div class="bg-rose-950/10 p-2.5 rounded-xl border border-rose-900/20 flex items-center justify-between text-xs">
+                        <span class="font-semibold text-rose-300">${getCountryFlagHTML(t.country)} ${t.name}</span>
+                        <span class="font-bold text-rose-400 text-[10px]">${count}/${sport.minPlayers || 2} atletas</span>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              ` : ''}
+            </div>
+
+            ${isAdmin ? `
+              <div class="border-t border-slate-800 pt-4">
+                <button onclick="window.triggerAutoDraw('${sport.id}')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors shadow-lg">
+                  ⚡ Gerar e Sortear Chave do Torneio
+                </button>
+              </div>
+            ` : `
+              <div class="bg-slate-900/40 p-3 rounded-2xl border border-slate-800 text-xs text-slate-400 italic">
+                Aguarde o sorteio oficial das partidas pelo corpo técnico da escola.
+              </div>
+            `}
+          </div>
+        `;
+        renderContainer.innerHTML = html;
+        document.getElementById('bracket-modal').classList.remove('hidden');
+        return;
+      }
+
+      const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'admin2');
+      const isMesario = currentUser && currentUser.role === 'mesario';
+
+      if (sport.system === 'mata_mata' || sport.system === 'double_elimination') {
+        let leftUpperMatches = [];
+        let leftLowerMatches = [];
+        let rightUpperMatches = [];
+        let rightLowerMatches = [];
+        let sfMatches = [];
+        let finalMatches = [];
+        let thirdMatches = [];
+
+        if (sport.system === 'mata_mata') {
+          leftUpperMatches = sportMatches.filter(m => m.id === `match-left-sup-${sportId}`);
+          leftLowerMatches = sportMatches.filter(m => m.id === `match-left-inf-${sportId}`);
+          rightUpperMatches = sportMatches.filter(m => m.id === `match-right-sup-${sportId}`);
+          rightLowerMatches = sportMatches.filter(m => m.id === `match-right-inf-${sportId}`);
+          sfMatches = sportMatches.filter(m => m.id === `match-sf1-${sportId}` || m.id === `match-sf2-${sportId}`);
+          finalMatches = sportMatches.filter(m => m.id === `match-central-final-${sportId}`);
+          thirdMatches = sportMatches.filter(m => m.id === `match-central-third-${sportId}`);
+        } else {
+          leftUpperMatches = sportMatches.filter(m => m.id.startsWith('match-left-q') || m.id.startsWith('match-left-sf') || m.id === `match-left-f-${sportId}`);
+          leftLowerMatches = sportMatches.filter(m => m.id.startsWith('match-left-lq') || m.id.startsWith('match-left-lsf') || m.id.startsWith('match-left-lf') || m.id === `match-left-lff-${sportId}`);
+          rightUpperMatches = sportMatches.filter(m => m.id.startsWith('match-right-q') || m.id.startsWith('match-right-sf') || m.id === `match-right-f-${sportId}`);
+          rightLowerMatches = sportMatches.filter(m => m.id.startsWith('match-right-lq') || m.id.startsWith('match-right-lsf') || m.id.startsWith('match-right-lf') || m.id === `match-right-lff-${sportId}`);
+          sfMatches = sportMatches.filter(m => m.id.startsWith('match-sf'));
+          finalMatches = sportMatches.filter(m => m.id.startsWith('match-central-final'));
+          thirdMatches = sportMatches.filter(m => m.id.startsWith('match-central-third'));
+        }
+
+        const renderMatchCardHTML = (match) => {
+          const t1 = state.turmas.find(t => t.id === match.team1) || { name: match.team1, country: '' };
+          const t2 = state.turmas.find(t => t.id === match.team2) || { name: match.team2, country: '' };
+          const isFinished = match.status === 'finished';
+          
+          let badgeT1 = ''; let badgeT2 = '';
+          if (isFinished) {
+            if (match.id.includes('central-final')) {
+              if (match.score1 > match.score2) { badgeT1 = '🥇'; badgeT2 = '🥈'; }
+              else if (match.score2 > match.score1) { badgeT2 = '🥇'; badgeT1 = '🥈'; }
+              else {
+                const tw = match.tieWinner || match.team1;
+                badgeT1 = tw === match.team1 ? '🥇' : '🥈';
+                badgeT2 = tw === match.team2 ? '🥇' : '🥈';
+              }
+            } else if (match.id.includes('central-third')) {
+              if (match.score1 > match.score2) { badgeT1 = '🥉'; }
+              else if (match.score2 > match.score1) { badgeT2 = '🥉'; }
+              else {
+                const tw = match.tieWinner || match.team1;
+                badgeT1 = tw === match.team1 ? '🥉' : '';
+                badgeT2 = tw === match.team2 ? '🥉' : '';
+              }
+            }
+          }
+
+          const dateTimeStr = `📅 ${match.date || 'A definir'} ${match.time ? `⏱️ ${match.time}` : ''}`;
+          const isFinal = match.id.includes('central-final');
+          const isThird = match.id.includes('central-third');
+          
+          let glowClass = 'border-slate-800 bg-slate-900';
+          if (isFinal) {
+            glowClass = 'border-amber-500 bg-gradient-to-r from-slate-900 via-amber-955/20 to-slate-900 shadow-lg border-2';
+          } else if (isThird) {
+            glowClass = 'border-indigo-500 bg-gradient-to-r from-slate-900 via-indigo-950/20 to-slate-900 shadow-lg border-2';
+          }
+
+          return `
+            <div class="${glowClass} p-3 rounded-2xl space-y-2 border text-left">
+              <div class="flex justify-between items-center">
+                <span class="text-[9px] font-black text-indigo-400 uppercase block">${match.stage}</span>
+                ${match.status === 'finished' ? `<span class="text-[8px] bg-emerald-950 text-emerald-400 px-1 py-0.5 rounded font-bold">Fim</span>` : ''}
+              </div>
+              <div class="space-y-1.5">
+                <div class="flex justify-between items-center text-xs text-slate-200">
+                  <span class="font-bold truncate max-w-[130px] flex items-center gap-1">
+                    ${getCountryFlagHTML(t1.country)} ${badgeT1} ${t1.name}
+                  </span>
+                  <span class="font-mono text-amber-400 font-extrabold text-sm">${isFinished ? match.score1 : '-'}</span>
+                </div>
+                <div class="flex justify-between items-center text-xs text-slate-200">
+                  <span class="font-bold truncate max-w-[130px] flex items-center gap-1">
+                    ${getCountryFlagHTML(t2.country)} ${badgeT2} ${t2.name}
+                  </span>
+                  <span class="font-mono text-amber-400 font-extrabold text-sm">${isFinished ? match.score2 : '-'}</span>
+                </div>
+              </div>
+              <div class="flex justify-between text-[9px] text-slate-500 pt-1 border-t border-slate-800">
+                <span>${dateTimeStr}</span>
+                <span>📍 ${match.location || 'Quadra Central'}</span>
+              </div>
+
+              <div class="flex gap-1 pt-1.5 border-t border-slate-800/40 no-print">
+                <button onclick="window.openSumulaModal('${match.id}')" class="flex-1 py-1 px-2 bg-slate-800 hover:bg-slate-700 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 text-slate-200">
+                  Súmula
+                </button>
+                ${(isAdmin || isMesario) ? `
+                  <button onclick="window.openMatchScoreModal('${match.id}')" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-550 text-white text-[10px] font-bold rounded-lg transition-all shadow">
+                    Placar
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        };
+
+        const renderLeftWing = () => `
+          <div class="space-y-6">
+            <div class="space-y-4 bg-slate-900/40 p-4 rounded-3xl border border-slate-800">
+              <span class="text-[10px] uppercase font-black text-indigo-400 tracking-wider block text-center border-b border-slate-800 pb-2">
+                ⬅️ CHAVE SUPERIOR ESQUERDA (${leftGrade}º Ano)
+              </span>
+              <div class="space-y-3">
+                ${leftUpperMatches.map(m => renderMatchCardHTML(m)).join('')}
+              </div>
+            </div>
+
+            <div class="space-y-4 bg-slate-900/60 p-4 rounded-3xl border border-slate-800">
+              <span class="text-[10px] uppercase font-black text-amber-500 tracking-wider block text-center border-b border-slate-800 pb-2">
+                🛡️ CHAVE INFERIOR ESQUERDA (${leftGrade}º Ano)
+              </span>
+              <div class="space-y-3">
+                ${leftLowerMatches.map(m => renderMatchCardHTML(m)).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+
+        const renderRightWing = () => `
+          <div class="space-y-6">
+            <div class="space-y-4 bg-slate-900/40 p-4 rounded-3xl border border-slate-800">
+              <span class="text-[10px] uppercase font-black text-indigo-400 tracking-wider block text-center border-b border-slate-800 pb-2">
+                CHAVE SUPERIOR DIREITA (${rightGrade}º Ano) ➡️
+              </span>
+              <div class="space-y-3">
+                ${rightUpperMatches.map(m => renderMatchCardHTML(m)).join('')}
+              </div>
+            </div>
+
+            <div class="space-y-4 bg-slate-900/60 p-4 rounded-3xl border border-slate-800">
+              <span class="text-[10px] uppercase font-black text-amber-500 tracking-wider block text-center border-b border-slate-800 pb-2">
+                🛡️ CHAVE INFERIOR DIREITA (${rightGrade}º Ano) ➡️
+              </span>
+              <div class="space-y-3">
+                ${rightLowerMatches.map(m => renderMatchCardHTML(m)).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+
+        const renderCentralStage = () => `
+          <div class="space-y-6 bg-indigo-955/10 p-5 rounded-3xl border border-indigo-500/20 sticky top-24">
+            <span class="text-[10px] uppercase font-black text-amber-400 tracking-wider block text-center border-b border-slate-800 pb-2 flex justify-center items-center gap-1.5">
+              🏆 PALCO CENTRAL (DECISÃO)
+            </span>
+            
+            <div class="space-y-3">
+              <span class="text-[9px] font-black text-indigo-400 block text-center uppercase tracking-widest">Semifinais</span>
+              ${sfMatches.map(m => renderMatchCardHTML(m)).join('')}
+            </div>
+
+            <div class="space-y-3 pt-4 border-t border-indigo-900/40">
+              <span class="text-[9px] font-black text-amber-400 block text-center uppercase tracking-widest">Grande Final</span>
+              ${finalMatches.map(m => renderMatchCardHTML(m)).join('')}
+            </div>
+
+            <div class="space-y-3 pt-4 border-t border-indigo-900/40">
+              <span class="text-[9px] font-black text-indigo-400 block text-center uppercase tracking-widest">Disputa de 3º Lugar</span>
+              ${thirdMatches.map(m => renderMatchCardHTML(m)).join('')}
+            </div>
+          </div>
+        `;
+
+        if (activeBracketWing === 'all') {
+          html = `
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2 items-start">
+              ${renderLeftWing()}
+              ${renderCentralStage()}
+              ${renderRightWing()}
+            </div>
+          `;
+        } else if (activeBracketWing === 'left') {
+          html = `<div class="max-w-2xl mx-auto">${renderLeftWing()}</div>`;
+        } else if (activeBracketWing === 'right') {
+          html = `<div class="max-w-2xl mx-auto">${renderRightWing()}</div>`;
+        } else if (activeBracketWing === 'center') {
+          html = `<div class="max-w-2xl mx-auto">${renderCentralStage()}</div>`;
+        }
+      } else {
+        const standings = {};
+        const enrolled = sport.enrolledClasses || [];
+        enrolled.forEach(classId => {
+          const t = state.turmas.find(x => x.id === classId);
+          if (t) {
+            standings[classId] = { classId, name: t.name, country: t.country, played: 0, won: 0, drawn: 0, lost: 0, points: 0, goalsFor: 0, goalsAgainst: 0, gd: 0 };
+          }
+        });
+
+        sportMatches.forEach(m => {
+          if (m.status !== 'finished') return;
+          const s1 = m.score1, s2 = m.score2;
+          const t1 = standings[m.team1], t2 = standings[m.team2];
+          if (t1 && t2) {
+            t1.played++; t2.played++;
+            t1.goalsFor += s1; t1.goalsAgainst += s2;
+            t2.goalsFor += s2; t2.goalsAgainst += s1;
+            if (s1 > s2) { t1.won++; t1.points += 3; t2.lost++; }
+            else if (s2 > s1) { t2.won++; t2.points += 3; t1.lost++; }
+            else { t1.drawn++; t2.drawn++; t1.points += 1; t2.points += 1; }
+            t1.gd = t1.goalsFor - t1.goalsAgainst;
+            t2.gd = t2.goalsFor - t2.goalsAgainst;
+          }
+        });
+
+        const sortedStandings = Object.values(standings).sort((a,b) => b.points - a.points || b.gd - a.gd || b.goalsFor - a.goalsFor);
+        const allMatchesFinished = sportMatches.length > 0 && sportMatches.every(m => m.status === 'finished');
+
+        html = `
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start text-left">
+            <div class="space-y-4">
+              <span class="text-xs font-black uppercase text-indigo-400">Classificação Geral de Pontos Corridos</span>
+              <div class="overflow-x-auto bg-slate-900/60 rounded-3xl border border-slate-800 p-4">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="text-slate-500 font-bold uppercase border-b border-slate-800 pb-2">
+                      <th class="pb-2">Turma</th>
+                      <th class="pb-2 text-center">J</th>
+                      <th class="pb-2 text-center">V</th>
+                      <th class="pb-2 text-center">E</th>
+                      <th class="pb-2 text-center">D</th>
+                      <th class="pb-2 text-center">SG</th>
+                      <th class="pb-2 text-right">Pts</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${sortedStandings.map((team, index) => {
+                      let medal = '';
+                      if (allMatchesFinished) {
+                        if (index === 0) medal = '🥇 ';
+                        else if (index === 1) medal = '🥈 ';
+                        else if (index === 2) medal = '🥉 ';
+                      }
+                      return `
+                        <tr class="border-b border-slate-800/40 last:border-0 hover:bg-slate-900/30">
+                          <td class="py-3 font-bold text-slate-300 flex items-center gap-1.5">
+                            ${getCountryFlagHTML(team.country)} ${medal}${team.name}
+                          </td>
+                          <td class="py-3 text-center text-slate-400">${team.played}</td>
+                          <td class="py-3 text-center text-slate-400">${team.won}</td>
+                          <td class="py-3 text-center text-slate-400">${team.drawn}</td>
+                          <td class="py-3 text-center text-slate-400">${team.lost}</td>
+                          <td class="py-3 text-center text-slate-400">${team.gd > 0 ? '+' : ''}${team.gd}</td>
+                          <td class="py-3 text-right font-black text-amber-400 text-sm">${team.points}</td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <span class="text-xs font-black uppercase text-indigo-400">Calendário de Jogos</span>
+              <div class="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                ${sportMatches.map(match => {
+                  const t1 = state.turmas.find(x => x.id === match.team1) || { name: match.team1, country: '' };
+                  const t2 = state.turmas.find(x => x.id === match.team2) || { name: match.team2, country: '' };
+                  return `
+                    <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex flex-col sm:flex-row justify-between items-center text-xs hover:border-slate-700 transition-colors gap-2">
+                      <div class="flex-1 text-left flex items-center gap-1.5 font-bold text-slate-200">
+                        ${getCountryFlagHTML(t1.country)} <span>${t1.name}</span>
+                      </div>
+                      <div class="px-3 bg-slate-900 py-1 rounded-xl border border-slate-800 font-mono text-amber-400 font-black text-xs">
+                        ${match.status === 'finished' ? `${match.score1} x ${match.score2}` : 'vs'}
+                      </div>
+                      <div class="flex-1 text-right flex items-center justify-end gap-1.5 font-bold text-slate-200">
+                        <span>${t2.name}</span> ${getCountryFlagHTML(t2.country)}
+                      </div>
+
+                      <div class="flex gap-1 mt-2 sm:mt-0 w-full sm:w-auto no-print justify-end">
+                        <button onclick="window.openSumulaModal('${match.id}')" class="py-1 px-2.5 bg-slate-800 hover:bg-slate-700 text-[10px] font-bold rounded-lg flex items-center gap-1 text-slate-200">
+                          Súmula
+                        </button>
+                        ${(isAdmin || isMesario) ? `
+                          <button onclick="window.openMatchScoreModal('${match.id}')" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-550 text-white text-[10px] font-bold rounded-lg shadow">
+                            Placar
+                          </button>
+                        ` : ''}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      renderContainer.innerHTML = html;
+      document.getElementById('bracket-modal').classList.remove('hidden');
+    }
+
+    function closeBracketModal() {
+      document.getElementById('bracket-modal').classList.add('hidden');
+      activeBracketSportId = null;
+    }
+
+    // --- RELATÓRIOS E PREMIAÇÕES ---
+    function openAwardModal() {
+      const activeModalidades = state.modalidades.filter(m => m.shift === activeShift);
+      const printContent = document.getElementById('award-modal-print-content');
+      let html = '';
+
+      html += `
+        <div class="text-center space-y-2 pb-4 border-b border-slate-800">
+          <h2 class="text-xl font-black text-amber-400 uppercase">${state.configuracoes.titlePortal}</h2>
+          <h3 class="text-xs font-bold text-indigo-400 uppercase">Estudantes Medalhistas — Relatório Oficial 2026</h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 text-left">
+      `;
+
+      activeModalidades.forEach(mod => {
+        const podium = getPodiumBySport(mod.id);
+        const goldClass = state.turmas.find(t => t.id === podium.gold) || { name: 'A definir' };
+        const silverClass = state.turmas.find(t => t.id === podium.silver) || { name: 'A definir' };
+        const bronzeClass = state.turmas.find(t => t.id === podium.bronze) || { name: 'A definir' };
+
+        const goldAthletes = podium.gold ? state.alunos.filter(a => a.classId === podium.gold && a.sports && a.sports.includes(mod.id)) : [];
+        const silverAthletes = podium.silver ? state.alunos.filter(a => a.classId === podium.silver && a.sports && a.sports.includes(mod.id)) : [];
+        const bronzeAthletes = podium.bronze ? state.alunos.filter(a => a.classId === podium.bronze && a.sports && a.sports.includes(mod.id)) : [];
+
+        html += `
+          <div class="bg-slate-950 p-4 rounded-3xl border border-slate-800 space-y-3 print-card">
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span class="text-2xl">${mod.icon}</span>
+              <span class="font-black text-xs text-indigo-400 uppercase tracking-wide">${mod.name}</span>
+            </div>
+
+            <div class="space-y-1">
+              <span class="text-[10px] font-black uppercase text-amber-400">🥇 1º (Ouro): ${goldClass.name}</span>
+              <ul class="list-disc list-inside pl-3 text-[11px] text-slate-300">
+                ${goldAthletes.map(a => `<li>${a.name}</li>`).join('') || '<li>Sem atletas inscritos</li>'}
+              </ul>
+            </div>
+
+            <div class="space-y-1">
+              <span class="text-[10px] font-black uppercase text-slate-300">🥈 2º (Prata): ${silverClass.name}</span>
+              <ul class="list-disc list-inside pl-3 text-[11px] text-slate-300">
+                ${silverAthletes.map(a => `<li>${a.name}</li>`).join('') || '<li>Sem atletas inscritos</li>'}
+              </ul>
+            </div>
+
+            <div class="space-y-1">
+              <span class="text-[10px] font-black uppercase text-amber-600">🥉 3º (Bronze): ${bronzeClass.name}</span>
+              <ul class="list-disc list-inside pl-3 text-[11px] text-slate-300">
+                ${bronzeAthletes.map(a => `<li>${a.name}</li>`).join('') || '<li>Sem atletas inscritos</li>'}
+              </ul>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      printContent.innerHTML = html;
+      document.getElementById('award-modal').classList.remove('hidden');
+    }
+
+    function closeAwardModal() {
+      document.getElementById('award-modal').classList.add('hidden');
+    }
+
+    function printClassCard(turmaId) {
+      const turma = state.turmas.find(t => t.id === turmaId);
+      if (!turma) return;
+
+      const activeModalidades = state.modalidades.filter(m => m.shift === activeShift);
+      let rostersHTML = '<div class="roster-grid">';
+
+      activeModalidades.forEach(mod => {
+        const teamAtletas = state.alunos.filter(a => a.classId === turmaId && a.sports && a.sports.includes(mod.id));
+        rostersHTML += `
+          <div class="sport-card">
+            <h3 class="sport-title">
+              <span class="sport-icon">${mod.icon}</span> ${mod.name}
+            </h3>
+            <div class="athlete-list">
+              ${teamAtletas.length > 0 
+                ? teamAtletas.map(ath => `
+                    <div class="athlete-item">
+                      <span>● ${ath.name}</span>
+                      <span class="gender-tag">${ath.gender}</span>
+                    </div>`).join('')
+                : '<div class="no-athletes" style="color:#94a3b8; font-style:italic;">Nenhum atleta inscrito.</div>'
+              }
+            </div>
+          </div>
+        `;
+      });
+      rostersHTML += '</div>';
+
+      const flagCode = COUNTRY_MAP[normalizeString(turma.country)] || null;
+      const flagHTML = flagCode ? `<img src="https://flagcdn.com/w40/${flagCode}.png" style="width: 28px; height: 18px; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.15); vertical-align: middle; margin-right: 8px;">` : '🏳️ ';
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Ficha Oficial - ${turma.name}</title>
+            <style>
+              body { font-family: 'Inter', sans-serif; padding: 30px; color: #0f172a; background: white; }
+              .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #f59e0b; padding-bottom: 12px; }
+              .title { font-size: 20px; font-weight: 900; margin: 0; }
+              .advisor { font-size: 12px; margin: 12px 0 16px 0; background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; }
+              .roster-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+              .sport-card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; background: #fafafb; }
+              .sport-title { margin: 0 0 8px 0; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+              .athlete-list { font-size: 11px; }
+              .athlete-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+              .gender-tag { font-size: 8px; font-weight: bold; background: #e2e8f0; padding: 1px 4px; border-radius: 3px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div>
+                <h1 class="title">${flagHTML}${turma.name}</h1>
+                <p style="margin:2px 0; font-size:10px; color:#64748b;">Delegação CEF 412 - Turno ${activeShift === 'matutino' ? 'Matutino' : 'Vespertino'}</p>
+              </div>
+              <div style="font-size:11px; text-align:right;">Emissão: ${new Date().toLocaleDateString('pt-BR')}</div>
+            </div>
+            <div class="advisor">
+              <strong>Professor Conselheiro:</strong> ${turma.advisor} | <strong>País Representado:</strong> ${turma.country}
+            </div>
+            \${rostersHTML}
+            <script>
+              window.onload = function() { window.print(); setTimeout(function() { window.close(); }, 500); };
+            <\/script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+
+    function exportMatchesCSV() {
+      const activeConfrontos = state.confrontos.filter(c => c.shift === activeShift);
+      let csv = 'ID;Esporte;Fase;Time 1;Placar 1;Placar 2;Time 2;Data;Horário;Local;Status\n';
+      activeConfrontos.forEach(m => {
+        const sport = state.modalidades.find(sp => sp.id === m.sportId) || { name: 'Geral' };
+        const t1 = state.turmas.find(t => t.id === m.team1) || { name: m.team1 };
+        const t2 = state.turmas.find(t => t.id === m.team2) || { name: m.team2 };
+        csv += `"${m.id}";"${sport.name}";"${m.stage}";"${t1.name}";${m.score1};${m.score2};"${t2.name}";"${m.date || ''}";"${m.time || ''}";"${m.location || ''}";"${m.status}"\n`;
+      });
+      
+      const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `cronograma_jogos_${activeShift}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // --- HANDLERS DOS MODAIS FEEDBACK ---
+    function openAlertModal(title, msg) {
+      document.getElementById('alert-title').innerText = title;
+      document.getElementById('alert-message').innerText = msg;
+      document.getElementById('alert-modal').classList.remove('hidden');
+    }
+    function closeAlertModal() {
+      document.getElementById('alert-modal').classList.add('hidden');
+    }
+    
+    let confirmCallback = null;
+    function openConfirmModal(title, msg, onConfirm) {
+      document.getElementById('confirm-title').innerText = title;
+      document.getElementById('confirm-message').innerText = msg;
+      confirmCallback = onConfirm;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      confirmCallback = null;
+    }
+    document.getElementById('confirm-btn-action').addEventListener('click', () => {
+      if (confirmCallback) confirmCallback();
+      closeConfirmModal();
+    });
+
+    function showToast(text) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-text');
+      if (toast && toastText) {
+        toastText.innerText = text;
+        toast.classList.remove('hidden');
+        setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+      }
+    }
+
+    function openLoginModal() {
+      document.getElementById('login-modal').classList.remove('hidden');
+    }
+    function closeLoginModal() {
+      document.getElementById('login-modal').classList.add('hidden');
+    }
+
+    function openRulesModal() {
+      const rulesText = state.configuracoes?.rulesText || DEFAULT_SEED.configuracoes.rulesText;
+      const rulesTitle = state.configuracoes?.rulesTitle || DEFAULT_SEED.configuracoes.rulesTitle;
+      
+      document.getElementById('rules-modal-title').innerText = rulesTitle;
+      document.getElementById('rules-modal-text').innerText = rulesText;
+
+      const isAuthorized = currentUser && currentUser.role === 'admin';
+      const editZone = document.getElementById('rules-admin-edit-zone');
+      const previewZone = document.getElementById('rules-modal-preview-zone');
+
+      if (isAuthorized) {
+        editZone.classList.remove('hidden');
+        previewZone.classList.add('hidden');
+        document.getElementById('rules-modal-input-title').value = rulesTitle;
+        document.getElementById('rules-modal-input-text').value = rulesText;
+      } else {
+        editZone.classList.add('hidden');
+        previewZone.classList.remove('hidden');
+      }
+
+      document.getElementById('rules-modal').classList.remove('hidden');
+    }
+    
+    function closeRulesModal() {
+      document.getElementById('rules-modal').classList.add('hidden');
+    }
+
+    function saveRulesFromModal() {
+      const title = document.getElementById('rules-modal-input-title').value.trim();
+      const text = document.getElementById('rules-modal-input-text').value.trim();
+      
+      state.configuracoes.rulesTitle = title;
+      state.configuracoes.rulesText = text;
+      
+      saveState();
+      closeRulesModal();
+      showToast("Regulamento atualizado globalmente!");
+    }
+
+    function updateModalFlagPreview(countryName) {
+      const preview = document.getElementById('turma-flag-preview');
+      if (!preview) return;
+      const code = getCountryCode(countryName);
+      if (code) {
+        preview.innerHTML = `<img class="w-8 h-5 object-cover rounded shadow" src="https://flagcdn.com/w40/\${code}.png">`;
+      } else {
+        preview.innerHTML = `<span class="text-xs text-slate-400">🏳️</span>`;
+      }
+    }
+
+    function autoSuggestEmoji(sportName) {
+      const iconInput = document.getElementById('modalidade-form-icon');
+      if (iconInput) {
+        iconInput.value = getAutoEmoji(sportName);
+      }
+    }
+
+    // --- EXPOSIÇÃO GLOBAL PARA MANIPULADORES INLINE ---
+    window.closeAlertModal = closeAlertModal;
+    window.closeConfirmModal = closeConfirmModal;
+    window.setShift = setShift;
+    window.switchTab = switchTab;
+    window.submitLogin = submitLogin;
+    window.closeLoginModal = closeLoginModal;
+    window.closeRulesModal = closeRulesModal;
+    window.saveRulesFromModal = saveRulesFromModal;
+    window.saveTurma = saveTurma;
+    window.updateModalFlagPreview = updateModalFlagPreview;
+    window.closeTurmaModal = closeTurmaModal;
+    window.saveModalidade = saveModalidade;
+    window.autoSuggestEmoji = autoSuggestEmoji;
+    window.closeModalidadeModal = closeModalidadeModal;
+    window.saveStudent = saveStudent;
+    window.closeStudentModal = closeStudentModal;
+    window.saveMatchScore = saveMatchScore;
+    window.setMatchFormStatus = setMatchFormStatus;
+    window.closeMatchModal = closeMatchModal;
+    window.closeSumulaModal = closeSumulaModal;
+    window.closeBracketModal = closeBracketModal;
+    window.setBracketWing = setBracketWing;
+    window.closeAwardModal = closeAwardModal;
+    window.saveUser = saveUser;
+    window.closeUserModal = closeUserModal;
+    window.handleLogout = handleLogout;
+    window.openLoginModal = openLoginModal;
+    window.toggleMenuVisibility = toggleMenuVisibility;
+    window.openModalidadeModal = openModalidadeModal;
+    window.saveConfigField = saveConfigField;
+    window.saveFirebaseCredentials = saveFirebaseCredentials;
+    window.openAddUserModal = openAddUserModal;
+    window.editUser = editUser;
+    window.deleteUser = deleteUser;
+    window.editModalidade = editModalidade;
+    window.deleteModalidade = deleteModalidade;
+    window.triggerAutoDraw = triggerAutoDraw;
+    window.openBracketModal = openBracketModal;
+    window.updateJogosFilters = updateJogosFilters;
+    window.exportMatchesCSV = exportMatchesCSV;
+    window.openSumulaModal = openSumulaModal;
+    window.openMatchScoreModal = openMatchScoreModal;
+    window.openAwardModal = openAwardModal;
+    window.openTurmaModal = openTurmaModal;
+    window.printClassCard = printClassCard;
+    window.editTurma = editTurma;
+    window.deleteTurma = deleteTurma;
+    window.toggleRosterView = toggleRosterView;
+    window.submitBulkImport = submitBulkImport;
+    window.updateStudentFilters = updateStudentFilters;
+    window.openStudentModal = openStudentModal;
+    window.toggleStudentGenderDirect = toggleStudentGenderDirect;
+    window.editStudent = editStudent;
+    window.deleteStudent = deleteStudent;
+    window.toggleStudentSport = toggleStudentSport;
+    window.toggleAttendance = toggleAttendance;
+    window.updatePlayerStat = updatePlayerStat;
+    window.openRulesModal = openRulesModal;
+
+    // Inicialização da Aplicação
+    initApp();
+  </script>
+</body>
+</html>
