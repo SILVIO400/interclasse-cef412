@@ -574,14 +574,14 @@
 
     // Mapeamentos e Valores Iniciais
     const COUNTRY_MAP = {
-      'argentina': 'ar', 'australia': 'au', 'africa do sul': 'za', 'algeria': 'dz',
+      'argentina': 'ar', 'australia': 'au', 'africa do sul': 'za', 'argelia': 'dz',
       'arabia saudita': 'sa', 'austria': 'at', 'belgica': 'be', 'bosnia e herzegovina': 'ba', 'brasil': 'br',
       'cabo verde': 'cv', 'canada': 'ca', 'catar': 'qa', 'colombia': 'co', 'coreia do sul': 'kr',
       'costa do marfim': 'ci', 'croacia': 'hr', 'curacao': 'cw', 'egito': 'eg', 'equador': 'ec',
       'escocia': 'gb-sct', 'espanha': 'es', 'estados unidos': 'us', 'eua': 'us', 'franca': 'fr', 'gana': 'gh',
       'haiti': 'ht', 'holanda': 'nl', 'inglaterra': 'gb-eng', 'ira': 'ir', 'iraque': 'iq', 'japao': 'jp',
       'jordania': 'jo', 'marrocos': 'ma', 'mexico': 'mx', 'noruega': 'no', 'nova zelandia': 'nz',
-      'panama': 'pa', 'paraguai': 'py', 'portugal': 'pt', 'republica rd congo': 'cd', 'republica tcheca': 'cz',
+      'panama': 'pa', 'paraguai': 'py', 'portugal': 'pt', 'republica do congo': 'cd', 'republica tcheca': 'cz',
       'senegal': 'sn', 'suecia': 'se', 'suica': 'ch', 'tunisia': 'tn', 'turquia': 'tr', 'uruguai': 'uy',
       'uzbequistao': 'uz', 'alemanha': 'de'
     };
@@ -622,10 +622,10 @@
         welcomeTitle: 'Jogos Interclasse CEF 412 - 2026',
         welcomeSubtitle: 'Coisas boas acontecem aqui!',
         maxSportsPerStudent: 2,
-        pointsGold: 10,
-        pointsSilver: 7,
-        pointsBronze: 5,
-        pointsParticipation: 2,
+        pointsGold: 100,
+        pointsSilver: 70,
+        pointsBronze: 50,
+        pointsParticipation: 0,
         matchMetrics: ['Faltas', 'Cartão Amarelo', 'Cartão Vermelho'],
         rulesTitle: 'Regulamento Geral dos Jogos',
         rulesText: '1. Respeito mútuo entre todos os participantes.\n2. É obrigatório o uso de calçados apropriados para quadra.\n3. Presença confirmada em súmula do mesário.',
@@ -841,11 +841,21 @@
       const norm = sportName.toLowerCase();
       if (norm.includes('futsal') || norm.includes('futebol')) return '⚽';
       if (norm.includes('volei') || norm.includes('vôlei')) return '🏐';
-      if (norm.includes('queimada')) return '🤾';
       if (norm.includes('basquete')) return '🏀';
-      if (norm.includes('tenis') || norm.includes('tênis')) return '🎾';
+      if (norm.includes('tenis') || norm.includes('tênis')) return '🏓';
+      if (norm.includes('futmesa')) return '🧍‍♀️⚽🏃‍♂️';
+      if (norm.includes('arremesso')) return '🏀🗑️';
+      if (norm.includes('toto') || norm.includes('pebolim')) return '🧍‍♀️🕹️🧍‍♂️';
+      if (norm.includes('domino') || norm.includes('dominó')) return '🀄';
+      if (norm.includes('dardo')) return '🎯';
       if (norm.includes('xadrez')) return '♟️';
       if (norm.includes('dama')) return '🏁';
+      if (norm.includes('fifa')) return '🎮';
+      if (norm.includes('just dance')) return '💃🕺';
+      if (norm.includes('quiz')) return '🧠';
+      if (norm.includes('queimada')) return '🤾';
+      if (norm.includes('pula corda')) return '🤸‍♀️➰';
+      if (norm.includes('cabo de guerra')) return '🧍‍♂️🧍‍♀️〰️🧍‍♀️🧍‍♂️';
       return '🏆';
     }
 
@@ -1280,23 +1290,23 @@
           sports.forEach(sp => {
             const hasAthletes = state.alunos.some(a => a.classId === t.id && a.sports && a.sports.includes(sp.id));
             if (hasAthletes) {
-              total += sp.pointsParticipation ?? 2;
+              total += sp.pointsParticipation ?? 0;
             }
 
             const podium = getPodiumBySport(sp.id);
             if (podium.gold === t.id) {
               gold++;
-              total += ((sp.pointsGold ?? 10) - (sp.pointsParticipation ?? 2));
+              total += ((sp.pointsGold ?? 100) - (sp.pointsParticipation ?? 0));
               goldSports.push(sp.name);
             }
             if (podium.silver === t.id) {
               silver++;
-              total += ((sp.pointsSilver ?? 7) - (sp.pointsParticipation ?? 2));
+              total += ((sp.pointsSilver ?? 70) - (sp.pointsParticipation ?? 0));
               silverSports.push(sp.name);
             }
             if (podium.bronze === t.id) {
               bronze++;
-              total += ((sp.pointsBronze ?? 5) - (sp.pointsParticipation ?? 2));
+              total += ((sp.pointsBronze ?? 50) - (sp.pointsParticipation ?? 0));
               bronzeSports.push(sp.name);
             }
           });
@@ -2066,10 +2076,10 @@
       const maxPlayers = parseInt(document.getElementById('modalidade-form-max').value) || 12;
       const minPlayersM = parseInt(document.getElementById('modalidade-form-min-m').value) || 0;
       const minPlayersF = parseInt(document.getElementById('modalidade-form-min-f').value) || 0;
-      const pointsGold = parseInt(document.getElementById('modalidade-form-p-gold').value) || 10;
-      const pointsSilver = parseInt(document.getElementById('modalidade-form-p-silver').value) || 7;
-      const pointsBronze = parseInt(document.getElementById('modalidade-form-p-bronze').value) || 5;
-      const pointsParticipation = parseInt(document.getElementById('modalidade-form-p-part').value) || 2;
+      const pointsGold = parseInt(document.getElementById('modalidade-form-p-gold').value) || 100;
+      const pointsSilver = parseInt(document.getElementById('modalidade-form-p-silver').value) || 70;
+      const pointsBronze = parseInt(document.getElementById('modalidade-form-p-bronze').value) || 50;
+      const pointsParticipation = parseInt(document.getElementById('modalidade-form-p-part').value) || 0;
       const system = document.getElementById('modalidade-form-system').value;
       const duration = document.getElementById('modalidade-form-duration').value.trim();
       const rulesText = document.getElementById('modalidade-form-rules').value.trim();
@@ -2113,10 +2123,10 @@
       document.getElementById('modalidade-form-max').value = sp.maxPlayers || 12;
       document.getElementById('modalidade-form-min-m').value = sp.minPlayersM ?? 0;
       document.getElementById('modalidade-form-min-f').value = sp.minPlayersF ?? 0;
-      document.getElementById('modalidade-form-p-gold').value = sp.pointsGold || 10;
-      document.getElementById('modalidade-form-p-silver').value = sp.pointsSilver || 7;
-      document.getElementById('modalidade-form-p-bronze').value = sp.pointsBronze || 5;
-      document.getElementById('modalidade-form-p-part').value = sp.pointsParticipation || 2;
+      document.getElementById('modalidade-form-p-gold').value = sp.pointsGold || 100;
+      document.getElementById('modalidade-form-p-silver').value = sp.pointsSilver || 70;
+      document.getElementById('modalidade-form-p-bronze').value = sp.pointsBronze || 50;
+      document.getElementById('modalidade-form-p-part').value = sp.pointsParticipation || 0;
       document.getElementById('modalidade-form-system').value = sp.system;
       document.getElementById('modalidade-form-duration').value = sp.duration;
       document.getElementById('modalidade-form-rules').value = sp.rulesText || '';
