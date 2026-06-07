@@ -1231,6 +1231,10 @@
       else if (activeTab === 'jogos') {
         const sports = state.modalidades.filter(m => m.shift === activeShift);
         const activeTurmas = state.turmas.filter(t => t.shift === activeShift);
+        
+        // NOVO: Pega as datas únicas dos confrontos do turno
+        const activeConfrontos = state.confrontos.filter(c => c.shift === activeShift);
+        const datasUnicas = [...new Set(activeConfrontos.map(m => m.date).filter(d => d && d.trim() !== ''))].sort();
 
         main.innerHTML = `
           <div class="space-y-6">
@@ -1251,11 +1255,10 @@
                 </select>
               </div>
               <div>
-                <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status</label>
-                <select id="filter-status" class="w-full bg-slate-950 p-2.5 rounded-xl text-xs border border-slate-800 text-slate-200 focus:outline-none" onchange="window.updateJogosFilters()">
-                  <option value="all" ${currentFilters.status === 'all' ? 'selected' : ''}>Todos</option>
-                  <option value="scheduled" ${currentFilters.status === 'scheduled' ? 'selected' : ''}>Agendados</option>
-                  <option value="finished" ${currentFilters.status === 'finished' ? 'selected' : ''}>Finalizados</option>
+                <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Data</label>
+                <select id="filter-date" class="w-full bg-slate-950 p-2.5 rounded-xl text-xs border border-slate-800 text-slate-200 focus:outline-none" onchange="window.updateJogosFilters()">
+                  <option value="all" ${currentFilters.date === 'all' || !currentFilters.date ? 'selected' : ''}>Todas as Datas</option>
+                  ${datasUnicas.map(d => `<option value="${d}" ${currentFilters.date === d ? 'selected' : ''}>${d}</option>`).join('')}
                 </select>
               </div>
 
@@ -1577,7 +1580,8 @@
     function updateJogosFilters() {
       currentFilters.sport = document.getElementById('filter-sport').value;
       currentFilters.class = document.getElementById('filter-class').value;
-      currentFilters.status = document.getElementById('filter-status').value;
+      // Atualizado para ler o Filtro de Data
+      currentFilters.date = document.getElementById('filter-date') ? document.getElementById('filter-date').value : 'all';
       renderMatchesList();
     }
 
@@ -1647,7 +1651,10 @@
       const filtered = activeConfrontos.filter(m => {
         if (currentFilters.sport !== 'all' && m.sportId !== currentFilters.sport) return false;
         if (currentFilters.class !== 'all' && m.team1 !== currentFilters.class && m.team2 !== currentFilters.class) return false;
-        if (currentFilters.status !== 'all' && m.status !== currentFilters.status) return false;
+        
+        // NOVO: Filtra pela data escolhida
+        if (currentFilters.date && currentFilters.date !== 'all' && m.date !== currentFilters.date) return false;
+        
         return true;
       });
 
