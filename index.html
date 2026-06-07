@@ -1326,9 +1326,17 @@
                 <p class="text-xs text-slate-400 mt-1">Soma de pontos considerando colocações e participação no esporte.</p>
               </div>
               
-              <button onclick="window.openAwardModal()" class="bg-indigo-600 hover:bg-indigo-550 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 text-white transition-all shadow-md self-start sm:self-auto">
-                <i class="fa-solid fa-trophy"></i> Alunos Medalhistas CEF 412
-              </button>
+              <div class="flex flex-wrap gap-2 self-start sm:self-auto">
+                <button onclick="window.openAwardModal()" class="bg-indigo-600 hover:bg-indigo-550 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 text-white transition-all shadow-md">
+                  <i class="fa-solid fa-trophy"></i> Alunos Medalhistas CEF 412
+                </button>
+
+                ${isAdmin ? `
+                <button onclick="window.printMedalReport()" class="bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md">
+                  <i class="fa-solid fa-print"></i> Relatório de Compra
+                </button>
+                ` : ''}
+              </div>
             </div>
             
             <div class="overflow-x-auto">
@@ -1388,7 +1396,7 @@
             </div>
           </div>
         `;
-      }
+}
 
       else if (activeTab === 'turmas') {
         const activeTurmas = state.turmas.filter(t => t.shift === activeShift);
@@ -3664,6 +3672,176 @@
     window.updatePlayerStat = updatePlayerStat;
     window.openRulesModal = openRulesModal;
 
+    window.printMedalReport = function() {
+        // 1. Identifica as listas globais de dados
+        let estudantes = [];
+        if (typeof state !== 'undefined' && state.students && state.students.length > 0) estudantes = state.students;
+        else if (typeof state !== 'undefined' && state.alunos && state.alunos.length > 0) estudantes = state.alunos;
+        else if (typeof window.students !== 'undefined' && window.students.length > 0) estudantes = window.students;
+
+        let todasAsTurmas = [];
+        if (typeof state !== 'undefined' && state.turmas && state.turmas.length > 0) todasAsTurmas = state.turmas;
+        else if (typeof state !== 'undefined' && state.classes && state.classes.length > 0) todasAsTurmas = state.classes;
+        else if (typeof window.turmas !== 'undefined' && window.turmas.length > 0) todasAsTurmas = window.turmas;
+
+        let modalidades = [];
+        if (typeof state !== 'undefined' && state.modalidades && state.modalidades.length > 0) modalidades = state.modalidades;
+        else if (typeof state !== 'undefined' && state.sports && state.sports.length > 0) modalidades = state.sports;
+        else if (typeof window.modalidades !== 'undefined' && window.modalidades.length > 0) modalidades = window.modalidades;
+
+        // 2. Filtra as turmas do turno atual
+        const linhasDaTabela = document.querySelectorAll('main table tbody tr');
+        const nomesDasTurmasVisiveis = [];
+        
+        linhasDaTabela.forEach(tr => {
+            const spanNome = tr.querySelector('span.text-slate-200');
+            if (spanNome) {
+                const nomeLimpo = spanNome.textContent.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '').trim();
+                if (nomeLimpo) nomesDasTurmasVisiveis.push(nomeLimpo);
+            }
+        });
+
+        let turmas = todasAsTurmas;
+        if (nomesDasTurmasVisiveis.length > 0) {
+            turmas = todasAsTurmas.filter(t => {
+                const nomeT = String(t.name || t.nome || '').trim().toLowerCase();
+                return nomesDasTurmasVisiveis.some(nomeTela => {
+                    const nomeTelaF = nomeTela.toLowerCase();
+                    return nomeTelaF.includes(nomeT) || nomeT.includes(nomeTelaF);
+                });
+            });
+        }
+
+        const idsTurmasDoTurno = turmas.map(t => String(t.id));
+
+        let turnoTexto = "";
+        document.querySelectorAll('button').forEach(btn => {
+            if (btn.className.includes('bg-indigo') || btn.className.includes('text-amber') || btn.className.includes('border-amber')) {
+                const txt = btn.textContent.toLowerCase();
+                if (txt.includes('matutino')) turnoTexto = " - MATUTINO";
+                if (txt.includes('vespertino')) turnoTexto = " - VESPERTINO";
+            }
+        });
+        
+        // 3. NOVO LAYOUT SUPER COMPACTO
+        let reportHTML = `
+          <div id="print-medal-area" style="background: white; color: black; font-family: 'Arial', sans-serif; font-size: 10px; padding: 0;">
+            <div style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 3px; margin-bottom: 8px;">
+              <h2 style="font-size: 13px; font-weight: bold; margin: 0; text-transform: uppercase;">
+                Relatório de Medalhas${turnoTexto}
+              </h2>
+              <p style="margin: 2px 0 0 0; font-size: 9px; color: #333;">
+                Quantidade baseada na equipe mais numerosa de cada modalidade (Kits completos).
+              </p>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+              <thead>
+                <tr style="background-color: #eee;">
+                  <th style="border: 1px solid #000; padding: 3px; text-align: left; width: 25%;">Modalidade</th>
+                  <th style="border: 1px solid #000; padding: 3px; text-align: left;">Turmas Inscritas (Qtd de Atletas)</th>
+                  <th style="border: 1px solid #000; padding: 3px; text-align: center; width: 25%;">Comprar (Ouro/Prata/Bronze)</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+
+        let totalGeralOuro = 0, totalGeralPrata = 0, totalGeralBronze = 0;
+        let encontrouAlguem = false;
+
+        modalidades.forEach(mod => {
+            let alunosPorTurma = {};
+            let modIdStr = String(mod.id);
+            
+            estudantes.forEach(est => {
+                const esportesDoAluno = est.sports || est.esportes || est.modalidades || est.modalidadeIds || []; 
+                const idTurma = String(est.classId || est.turmaId || est.turma || est.teamId || '');
+
+                if (idsTurmasDoTurno.includes(idTurma)) {
+                    let temEsporte = false;
+                    if (Array.isArray(esportesDoAluno)) {
+                        temEsporte = esportesDoAluno.map(e => String(e)).includes(modIdStr);
+                    } else if (typeof esportesDoAluno === 'object') {
+                        temEsporte = esportesDoAluno[modIdStr] === true; 
+                    }
+
+                    if (temEsporte) {
+                        if (!alunosPorTurma[idTurma]) alunosPorTurma[idTurma] = 0;
+                        alunosPorTurma[idTurma]++;
+                    }
+                }
+            });
+
+            const turmasIds = Object.keys(alunosPorTurma);
+            if (turmasIds.length === 0) return; 
+            
+            encontrouAlguem = true;
+            let maxAtletas = 0;
+            
+            // Reúne as turmas em texto corrido para economizar linhas
+            const turmasProcessadas = turmasIds.map(tId => {
+                const turmaObj = turmas.find(t => String(t.id) === String(tId));
+                const nomeTurma = turmaObj ? (turmaObj.name || turmaObj.nome) : ('Turma ' + tId);
+                const qtd = alunosPorTurma[tId];
+                if (qtd > maxAtletas) maxAtletas = qtd;
+                return `<b>${nomeTurma}</b> (${qtd})`;
+            }).join(' / '); // Usa a barra para separar as turmas na mesma linha
+
+            totalGeralOuro += maxAtletas;
+            totalGeralPrata += maxAtletas;
+            totalGeralBronze += maxAtletas;
+
+            reportHTML += `
+              <tr>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-weight: bold; white-space: nowrap;">${mod.icon || ''} ${mod.name || mod.nome}</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; font-size: 9.5px; line-height: 1.3;">${turmasProcessadas}</td>
+                <td style="border: 1px solid #000; padding: 3px 4px; text-align: center; font-weight: bold; background-color: #fafafa;">
+                    ${maxAtletas} KITS <span style="font-size: 8px; font-weight: normal;">(O/P/B)</span>
+                </td>
+              </tr>
+            `;
+        });
+
+        if (!encontrouAlguem) {
+            reportHTML += `<tr><td colspan="3" style="text-align: center; padding: 10px; border: 1px solid #000;">Nenhum aluno inscrito foi localizado nas turmas deste turno.</td></tr>`;
+        }
+
+        reportHTML += `
+              </tbody>
+            </table>
+            
+            <div style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; font-size: 11px; text-transform: uppercase; background-color: #eee;">
+                TOTAL DO TURNO: ${totalGeralOuro} Ouro | ${totalGeralPrata} Prata | ${totalGeralBronze} Bronze
+            </div>
+          </div>
+        `;
+
+        // 4. CSS de Impressão otimizado com margens mínimas
+        const printContainer = document.createElement('div');
+        printContainer.innerHTML = reportHTML;
+        
+        const style = document.createElement('style');
+        style.innerHTML = `
+          @media print {
+            body > * { display: none !important; }
+            .print-temp-container { display: block !important; position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 0; }
+            .print-temp-container * { visibility: visible; }
+            @page { margin: 5mm; size: auto; } /* Margem de apenas meio centímetro */
+          }
+        `;
+        
+        printContainer.classList.add('print-temp-container');
+        document.body.appendChild(style);
+        document.body.appendChild(printContainer);
+
+        window.print();
+
+        setTimeout(() => {
+            document.body.removeChild(printContainer);
+            document.body.removeChild(style);
+        }, 1000);
+    };
+    
     // Inicialização da Aplicação
     initApp();
   </script>
