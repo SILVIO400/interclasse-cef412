@@ -1647,7 +1647,14 @@
 
       const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'admin2');
       const isMesario = currentUser && currentUser.role === 'mesario';
-      const activeConfrontos = state.confrontos.filter(c => c.shift === activeShift);
+      const activeConfrontos = state.confrontos.filter(c => {
+  const modalidadeExiste = state.modalidades.some(
+    m => m.id === c.sportId
+  );
+
+  return modalidadeExiste &&
+         c.shift === activeShift;
+});
 
       const filtered = activeConfrontos.filter(m => {
         if (currentFilters.sport !== 'all' && m.sportId !== currentFilters.sport) return false;
