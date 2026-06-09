@@ -31,6 +31,43 @@
         border-radius: 1rem !important;
         box-shadow: none !important;
       }
+
+      /* --- NOVO: REGRAS APENAS PARA A ÁRVORE DE JOGOS (BRACKET) --- */
+      #bracket-modal {
+        display: block !important;
+        width: 100% !important;
+        background: white !important;
+      }
+      
+      /* Força as colunas (Fases) a ficarem uma do lado da outra */
+      #bracket-modal .flex-col { 
+        flex-direction: row !important; 
+        align-items: flex-start !important;
+        gap: 0.3rem !important;
+      }
+
+      /* Reduz o tamanho das caixas e margens para caber na folha */
+      #bracket-modal .bg-slate-900 {
+        padding: 0.15rem !important;
+        margin-bottom: 0.15rem !important;
+        border: 1px solid #000 !important;
+        min-width: 50px !important;
+      }
+
+      /* Mantém as fontes em um tamanho legível (aprox. tamanho 12) */
+      #bracket-modal span, 
+      #bracket-modal div {
+        font-size: 9px !important;
+        line-height: 1.1 !important;
+        color: black !important;
+      }
+
+      /* Diminui os ícones e títulos grandes do topo para poupar espaço */
+      #bracket-modal h2, 
+      #bracket-modal h3 {
+        font-size: 11px !important;
+        margin-bottom: 3px !important;
+      }
     }
     ::-webkit-scrollbar {
       width: 6px;
