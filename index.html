@@ -1440,20 +1440,26 @@
 }
 
       else if (activeTab === 'turmas') {
-        const activeTurmas = state.turmas.filter(t => t.shift === activeShift);
+        // 1. AQUI ESTÁ A MUDANÇA: Adicionamos o .sort() para ordenar de A a Z
+        const activeTurmas = state.turmas.filter(t => t.shift === activeShift).sort((a, b) => a.name.localeCompare(b.name));
         const activeModalidades = state.modalidades.filter(m => m.shift === activeShift);
 
         main.innerHTML = `
           <div class="space-y-4 text-left">
-            <div class="flex justify-between items-center">
+            <div class="flex flex-col gap-3">
               <div>
                 <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider">Relação de Equipes Formadas</h4>
                 <p class="text-xs text-slate-400 mt-1">Gere relatórios de inscrição e acompanhe a formação das salas.</p>
               </div>
               ${isAdmin ? `
-                <button onclick="window.openTurmaModal()" class="bg-indigo-600 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-1 shadow text-white">
-                  <i class="fa-solid fa-plus"></i> Adicionar Turma
-                </button>
+                <div class="flex flex-wrap items-center gap-2">
+                  <button onclick="window.printRelatorioModalidades()" class="bg-amber-500 hover:bg-amber-400 font-extrabold text-xs py-2 px-3 rounded-xl flex items-center gap-1.5 shadow-lg text-slate-900 transition-colors">
+                    <i class="fa-solid fa-file-pdf"></i> Relatório Geral (Mural)
+                  </button>
+                  <button onclick="window.openTurmaModal()" class="bg-indigo-600 hover:bg-indigo-500 font-bold text-xs py-2 px-3 rounded-xl flex items-center gap-1.5 shadow text-white transition-colors">
+                    <i class="fa-solid fa-plus"></i> Adicionar Turma
+                  </button>
+                </div>
               ` : ''}
             </div>
 
@@ -3896,6 +3902,112 @@
     
     // Inicialização da Aplicação
     initApp();
+    // --- FUNÇÃO PARA IMPRESSÃO DO RELATÓRIO DE MODALIDADES (4x4 BLINDADO) ---
+    window.printRelatorioModalidades = function() {
+        const shiftTurmas = state.turmas.filter(t => t.shift === activeShift)
+            .sort((a, b) => a.name.localeCompare(b.name));
+            
+        const shiftModalidades = state.modalidades.filter(m => m.shift === activeShift);
+
+        if (shiftModalidades.length === 0) {
+            alert("Nenhuma modalidade cadastrada para este turno.");
+            return;
+        }
+
+        let reportHTML = '';
+
+        // 2. Cria uma página A4 travada para CADA modalidade
+        shiftModalidades.forEach((mod, index) => {
+            reportHTML += `
+                <div class="print-page" style="page-break-after: always; width: 210mm; height: 296mm; padding: 8mm; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; background: white; margin: 0 auto;">
+                    
+                    <div style="text-align: center; margin-bottom: 8px; flex-shrink: 0;">
+                        <h1 style="font-size: 20px; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            ${mod.icon || '🏆'} ${mod.name}
+                        </h1>
+                        <div style="width: 40px; height: 3px; background: #3b82f6; margin: 2px auto; border-radius: 2px;"></div>
+                        <p style="font-size: 8px; font-weight: 800; color: #64748b; margin-top: 2px; text-transform: uppercase; letter-spacing: 1px;">
+                            Jogos Interclasse CEF 412 (2026) - Relatório de Equipes - ${activeShift}
+                        </p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 6px; flex-grow: 1; min-height: 0;">
+            `;
+
+            // Limita a 16 turmas para garantir que não quebra o layout 4x4
+            const turmasToRender = shiftTurmas.slice(0, 16);
+
+            // 3. Monta os Cards das Turmas
+            turmasToRender.forEach(t => {
+                const atletas = state.alunos.filter(a => a.classId === t.id && a.sports && a.sports.includes(mod.id));
+                
+                // CORREÇÃO: Traz a bandeira nativa para o cabeçalho do PDF
+                const flagHTML = getCountryFlagHTML(t.country); 
+
+                // Se houver mais de 8 atletas, divide em 2 colunas dentro da caixinha para economizar altura!
+                const numColunas = atletas.length > 8 ? 2 : 1;
+
+                reportHTML += `
+                    <div style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; background: #f8fafc; box-shadow: inset 0 0 0 1px rgba(255,255,255,1);">
+                        
+                        <div style="background: #1e293b; color: #ffffff; padding: 3px; font-size: 10px; font-weight: 900; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; text-transform: uppercase; border-bottom: 2px solid #3b82f6;">
+                            ${flagHTML} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.name}</span>
+                        </div>
+                        
+                        <div style="padding: 4px; flex-grow: 1; overflow: hidden; background: #ffffff;">
+                            ${atletas.length > 0 ? `
+                                <ul style="list-style-type: none; margin: 0; padding: 0; font-size: 7.5px; line-height: 1.2; font-weight: 600; color: #334155; column-count: ${numColunas}; column-gap: 6px;">
+                                    ${atletas.map(a => `
+                                        <li style="padding: 1px 0; border-bottom: 1px dashed #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            <span style="color:#3b82f6; font-size: 6px; margin-right: 2px;">▶</span>${a.name}
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            ` : `
+                                <div style="font-size: 8px; color: #94a3b8; text-align: center; height: 100%; display: flex; align-items: center; justify-content: center; font-style: italic; font-weight: 500;">
+                                    Nenhuma inscrição
+                                </div>
+                            `}
+                        </div>
+                        
+                        <div style="background: #e2e8f0; font-size: 6.5px; text-align: center; padding: 2px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 1px; border-top: 1px solid #cbd5e1;">
+                            ${atletas.length} Atletas
+                        </div>
+                    </div>
+                `;
+            });
+
+            reportHTML += `
+                    </div> </div> `;
+        });
+
+        // 4. Injeção Temporária e Impressão
+        const printContainer = document.createElement('div');
+        printContainer.innerHTML = reportHTML;
+        
+        const style = document.createElement('style');
+        style.innerHTML = `
+          @media print {
+            body > *:not(.print-temp-container) { display: none !important; }
+            .print-temp-container { display: block !important; position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 0; background: white; }
+            .print-temp-container * { visibility: visible; }
+            /* Zera margens do Chrome e trava o papel no A4 */
+            @page { margin: 0; size: A4 portrait; }
+          }
+        `;
+        
+        printContainer.classList.add('print-temp-container');
+        document.body.appendChild(style);
+        document.body.appendChild(printContainer);
+
+        window.print();
+
+        // 5. Limpeza pós-impressão
+        setTimeout(() => {
+            document.body.removeChild(printContainer);
+            document.body.removeChild(style);
+        }, 1000);
+    };
   </script>
 </body>
 </html>
