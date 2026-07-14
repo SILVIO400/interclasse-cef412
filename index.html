@@ -1030,8 +1030,11 @@
                 <h4 class="text-xs font-black uppercase text-indigo-400 flex items-center gap-1.5">
                   <i class="fa-solid fa-gears"></i> Painel de Configurações Administrativas
                 </h4>
-                <div class="flex gap-2">
-                  <button onclick="window.openModalidadeModal()" class="bg-indigo-600 hover:bg-indigo-500 font-extrabold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 text-white shadow">
+                <div class="flex flex-wrap items-center gap-2">
+                  <button onclick="window.printTodasChavesMural()" class="bg-amber-500 hover:bg-amber-400 font-extrabold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 text-slate-900 shadow-lg transition-colors">
+                    <i class="fa-solid fa-sitemap"></i> Imprimir Chaves (Mural)
+                  </button>
+                  <button onclick="window.openModalidadeModal()" class="bg-indigo-600 hover:bg-indigo-500 font-extrabold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 text-white shadow transition-colors">
                     <i class="fa-solid fa-plus"></i> Novo Esporte
                   </button>
                 </div>
@@ -4006,6 +4009,313 @@
         setTimeout(() => {
             document.body.removeChild(printContainer);
             document.body.removeChild(style);
+        }, 1000);
+    };
+    // --- FUNÇÃO PARA IMPRESSÃO DE CHAVES NO MURAL (VERSÃO DEFINITIVA À PROVA DE ERROS) ---
+    window.printTodasChavesMural = function() {
+        const shiftModalidades = state.modalidades.filter(m => m.shift === activeShift && m.system === 'mata_mata');
+        const allMatches = state.confrontos;
+
+        const validMods = shiftModalidades.filter(mod => allMatches.some(m => m.sportId === mod.id));
+
+        if (validMods.length === 0) {
+            alert("Nenhuma chave de mata-mata foi gerada para este turno. Faça o sorteio primeiro.");
+            return;
+        }
+
+        const pad = (arr, len) => {
+            const res = [...arr];
+            while(res.length < len) res.push(null);
+            return res;
+        };
+
+        const getSafeFlag = (country) => {
+            try {
+                if (typeof window.getCountryFlagHTML === 'function') return window.getCountryFlagHTML(country) || '';
+                if (typeof getCountryFlagHTML === 'function') return getCountryFlagHTML(country) || '';
+                return '';
+            } catch(e) { return ''; }
+        };
+
+        let reportHTML = '';
+
+        validMods.forEach((mod, index) => {
+            const sm = allMatches.filter(m => m.sportId === mod.id);
+
+            const leftR1 = pad(sm.filter(m => m.id.startsWith('match-left-r1')).sort((a,b) => a.id.localeCompare(b.id)), 4);
+            const leftR2 = pad(sm.filter(m => m.id.startsWith('match-left-r2')).sort((a,b) => a.id.localeCompare(b.id)), 2);
+            const rightR1 = pad(sm.filter(m => m.id.startsWith('match-right-r1')).sort((a,b) => a.id.localeCompare(b.id)), 4);
+            const rightR2 = pad(sm.filter(m => m.id.startsWith('match-right-r2')).sort((a,b) => a.id.localeCompare(b.id)), 2);
+            
+            const sf1 = sm.find(m => m.id === `match-sf1-${mod.id}`);
+            const sf2 = sm.find(m => m.id === `match-sf2-${mod.id}`);
+            const finalMatch = sm.find(m => m.id === `match-central-final-${mod.id}`);
+            const thirdMatch = sm.find(m => m.id === `match-central-third-${mod.id}`);
+
+            let campeao = { name: 'A Definir', country: '' };
+            let vice = { name: 'A Definir', country: '' };
+            let terceiro = { name: 'A Definir', country: '' };
+
+            if (finalMatch && finalMatch.status === 'finished') {
+                const t1 = state.turmas.find(t => t.id === finalMatch.team1) || { name: finalMatch.team1, country: '' };
+                const t2 = state.turmas.find(t => t.id === finalMatch.team2) || { name: finalMatch.team2, country: '' };
+                const s1 = parseInt(finalMatch.score1) || 0;
+                const s2 = parseInt(finalMatch.score2) || 0;
+                
+                if (s1 > s2) { campeao = t1; vice = t2; }
+                else if (s2 > s1) { campeao = t2; vice = t1; }
+                else { campeao = t1; vice = t2; }
+            }
+
+            if (thirdMatch && thirdMatch.status === 'finished') {
+                const t1 = state.turmas.find(t => t.id === thirdMatch.team1) || { name: thirdMatch.team1, country: '' };
+                const t2 = state.turmas.find(t => t.id === thirdMatch.team2) || { name: thirdMatch.team2, country: '' };
+                const s1 = parseInt(thirdMatch.score1) || 0;
+                const s2 = parseInt(thirdMatch.score2) || 0;
+                
+                if (s1 > s2) { terceiro = t1; }
+                else if (s2 > s1) { terceiro = t2; }
+                else { terceiro = t1; }
+            }
+
+            // Construtor Seguro (Sem Emojis internos)
+            const renderCard = (match, colorClass, customTitle = null, ph1 = 'Vazio', ph2 = 'Vazio') => {
+                if (!match) return '<div class="card-wrap"><div class="match-card" style="visibility: hidden; height: 75px;"></div></div>';
+                
+                const realT1 = state.turmas.find(t => t.id === match.team1);
+                const realT2 = state.turmas.find(t => t.id === match.team2);
+                
+                let n1 = '', n2 = '', f1 = '', f2 = '';
+
+                if (realT1) {
+                    n1 = (realT1.name === 'W.O.' || realT1.name === 'Vazio') ? '<span style="opacity:0.4">Vazio</span>' : realT1.name;
+                    f1 = getSafeFlag(realT1.country);
+                } else {
+                    n1 = '<span style="opacity:0.65; font-size: 11px;">' + ph1 + '</span>';
+                }
+
+                if (realT2) {
+                    n2 = (realT2.name === 'W.O.' || realT2.name === 'Vazio') ? '<span style="opacity:0.4">Vazio</span>' : realT2.name;
+                    f2 = getSafeFlag(realT2.country);
+                } else {
+                    n2 = '<span style="opacity:0.65; font-size: 11px;">' + ph2 + '</span>';
+                }
+
+                const isFin = match.status === 'finished';
+                const s1 = isFin ? match.score1 : '-';
+                const s2 = isFin ? match.score2 : '-';
+
+                let stageTitle = customTitle ? customTitle : match.stage.split('-')[0].trim().toUpperCase();
+
+                return `
+                    <div class="card-wrap">
+                        <div class="match-card ${colorClass}">
+                            <div class="match-stage">${stageTitle}</div>
+                            <div class="match-content">
+                                <div class="teams-container">
+                                    <div class="team-row">
+                                        <span class="team-name"><span class="flag-icon">${f1}</span> <span class="truncate-name">${n1}</span></span>
+                                        <span class="team-score">${s1}</span>
+                                    </div>
+                                    <div class="team-row">
+                                        <span class="team-name"><span class="flag-icon">${f2}</span> <span class="truncate-name">${n2}</span></span>
+                                        <span class="team-score">${s2}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            };
+
+            // Construção das Listas (Concatenação Segura)
+            const leftR1HTML = leftR1.map((m, i) => renderCard(m, 'card-blue', '1ª RODADA - J' + (i+1) + ' - Esq.')).join('');
+            const rightR1HTML = rightR1.map((m, i) => renderCard(m, 'card-blue', '1ª RODADA - J' + (i+1) + ' - Dir.')).join('');
+
+            reportHTML += `
+                <div class="print-page">
+                    <div class="header">
+                        <h1>${mod.name} ${mod.icon || '🏆'}</h1>
+                        <p>JOGOS INTERCLASSE CEF 412 (2026) - CHAVE OFICIAL - ${activeShift.toUpperCase()}</p>
+                    </div>
+
+                    <div class="bracket-container">
+                        
+                        <div class="col col-r1">${leftR1HTML}</div>
+                        <div class="conn-col"><div class="conn-pair left"></div><div class="conn-pair left"></div></div>
+
+                        <div class="col col-r2">
+                            ${renderCard(leftR2[0], 'card-blue', '2ª RODADA - J5 - Esq.', 'Venc. J1 - Esq.', 'Venc. J2 - Esq.')}
+                            ${renderCard(leftR2[1], 'card-blue', '2ª RODADA - J6 - Esq.', 'Venc. J3 - Esq.', 'Venc. J4 - Esq.')}
+                        </div>
+
+                        <div class="conn-col">
+                            <div class="card-wrap"><div class="conn-line"></div></div>
+                            <div class="card-wrap"><div class="conn-line"></div></div>
+                        </div>
+
+                        <div class="col col-center">
+                            
+                            <div class="sf-box top">
+                                ${renderCard(sf1, 'card-green', 'SEMIFINAL 1', 'Venc. J5 - Esq.', 'Venc. J5 - Dir.')}
+                            </div>
+                            
+                            <div class="medals-wrapper">
+                                <div class="medal-box">
+                                    ${renderCard(finalMatch, 'card-gold', '🏆 GRANDE FINAL 🏆', 'Venc. SF1', 'Venc. SF2')}
+                                </div>
+
+                                <div class="podium-box">
+                                    <div class="podium-title">CLASSIFICAÇÃO FINAL</div>
+                                    <div class="podium-row">
+                                        <span class="podium-label gold">CAMPEÃO</span>
+                                        <span class="flag-icon" style="font-size: 14px; margin-right: 2px;">${getSafeFlag(campeao.country)}</span>
+                                        <span class="truncate-name" style="max-width: 60px;">${campeao.name}</span>
+                                    </div>
+                                    <div class="podium-row">
+                                        <span class="podium-label silver">VICE</span>
+                                        <span class="flag-icon" style="font-size: 14px; margin-right: 2px;">${getSafeFlag(vice.country)}</span>
+                                        <span class="truncate-name" style="max-width: 60px;">${vice.name}</span>
+                                    </div>
+                                    <div class="podium-row">
+                                        <span class="podium-label bronze">3º LUGAR</span>
+                                        <span class="flag-icon" style="font-size: 14px; margin-right: 2px;">${getSafeFlag(terceiro.country)}</span>
+                                        <span class="truncate-name" style="max-width: 60px;">${terceiro.name}</span>
+                                    </div>
+                                </div>
+
+                                <div class="medal-box">
+                                    ${renderCard(thirdMatch, 'card-bronze', '🥉 3º LUGAR 🥉', 'Perd. SF1', 'Perd. SF2')}
+                                </div>
+                            </div>
+
+                            <div class="sf-box bottom">
+                                ${renderCard(sf2, 'card-green', 'SEMIFINAL 2', 'Venc. J6 - Esq.', 'Venc. J6 - Dir.')}
+                            </div>
+
+                        </div>
+
+                        <div class="conn-col">
+                            <div class="card-wrap"><div class="conn-line"></div></div>
+                            <div class="card-wrap"><div class="conn-line"></div></div>
+                        </div>
+
+                        <div class="col col-r2">
+                            ${renderCard(rightR2[0], 'card-blue', '2ª RODADA - J5 - Dir.', 'Venc. J1 - Dir.', 'Venc. J2 - Dir.')}
+                            ${renderCard(rightR2[1], 'card-blue', '2ª RODADA - J6 - Dir.', 'Venc. J3 - Dir.', 'Venc. J4 - Dir.')}
+                        </div>
+
+                        <div class="conn-col"><div class="conn-pair right"></div><div class="conn-pair right"></div></div>
+
+                        <div class="col col-r1">${rightR1HTML}</div>
+
+                    </div>
+                </div>
+            `;
+        });
+
+        // Aplicação Segura no DOM para não escrever código na tela
+        const printContainer = document.createElement('div');
+        printContainer.classList.add('print-temp-container');
+        printContainer.innerHTML = reportHTML;
+        
+        const style = document.createElement('style');
+        style.type = 'text/css';
+        style.innerHTML = `
+          @media print {
+            body > *:not(.print-temp-container) { display: none !important; }
+            .print-temp-container { display: block !important; position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
+            @page { margin: 0; size: A4 landscape; }
+
+            .print-page {
+                page-break-after: always; width: 296mm; height: 209mm; padding: 12mm 5mm; box-sizing: border-box;
+                background: #f8fafc; margin: 0 auto; display: flex; flex-direction: column; font-family: 'Inter', sans-serif;
+            }
+
+            .header { text-align: center; margin-bottom: 10px; flex-shrink: 0; }
+            .header h1 { font-size: 30px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin: 0; letter-spacing: -0.5px; }
+            .header p { font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 2px; margin-top: 4px; }
+
+            .bracket-container { display: flex; justify-content: space-between; align-items: stretch; flex-grow: 1; position: relative; }
+            .col { display: flex; flex-direction: column; justify-content: space-around; z-index: 10; }
+            
+            .col-r1 { width: 190px; }
+            .col-r2 { width: 190px; }
+            .col-center { width: 200px; position: relative; }
+            
+            .card-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
+
+            .sf-box { position: absolute; left: 50%; transform: translateX(-50%); width: 100%; display: flex; justify-content: center; z-index: 10; }
+            .sf-box.top { top: 25%; transform: translate(-50%, -50%); }
+            .sf-box.bottom { top: 75%; transform: translate(-50%, -50%); }
+            
+            /* ÁREA CENTRAL AINDA MAIS COMPACTA (Reduzida para caber caixas menores) */
+            .medals-wrapper { 
+                position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                width: 460px; display: flex; justify-content: space-between; align-items: center; gap: 12px; z-index: 30; 
+            }
+            
+            /* CAIXAS DA FINAL E 3º LUGAR ESTREITADAS EM 35% */
+            .medal-box { flex: 0.65; display: flex; flex-direction: column; align-items: center; }
+
+            /* PÓDIO ESTREITADO MAIS 10% */
+            .podium-box {
+                flex: 0.55; 
+                background: white; border: 2px solid #0f172a; border-radius: 8px;
+                padding: 6px 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+                display: flex; flex-direction: column; gap: 4px; justify-content: center;
+            }
+            .podium-title { font-size: 10px; font-weight: 900; text-align: center; color: #0f172a; margin-bottom: 2px; letter-spacing: 1px; border-bottom: 2px dashed #cbd5e1; padding-bottom: 3px; }
+            .podium-row { display: flex; align-items: center; font-size: 11px; font-weight: 800; color: #1e293b; background: #f8fafc; padding: 3px 4px; border-radius: 4px;}
+            .podium-label { padding: 3px 0; width: 50px; text-align: center; border-radius: 4px; font-size: 8px; font-weight: 900; color: white; margin-right: 6px; letter-spacing: 0.5px;}
+            .podium-label.gold { background: #ca8a04; }
+            .podium-label.silver { background: #64748b; }
+            .podium-label.bronze { background: #ea580c; }
+
+            .conn-col { width: 30px; display: flex; flex-direction: column; z-index: 0; }
+            .conn-pair { flex: 1; position: relative; }
+            
+            .conn-pair.left::before { content: ''; position: absolute; left: 0; right: 50%; top: 25%; bottom: 25%; border: 3px solid #94a3b8; border-left: none; border-radius: 0 5px 5px 0; }
+            .conn-pair.left::after { content: ''; position: absolute; left: 50%; right: 0; top: 50%; border-top: 3px solid #94a3b8; }
+            
+            .conn-pair.right::before { content: ''; position: absolute; right: 0; left: 50%; top: 25%; bottom: 25%; border: 3px solid #94a3b8; border-right: none; border-radius: 5px 0 0 5px; }
+            .conn-pair.right::after { content: ''; position: absolute; left: 0; right: 50%; top: 50%; border-top: 3px solid #94a3b8; }
+
+            .conn-line { width: 100%; height: 3px; background: #94a3b8; }
+
+            .match-card {
+                width: 100%; border-radius: 8px; background: white; border: 2.5px solid #e2e8f0;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden;
+            }
+
+            .match-stage { font-size: 10px; font-weight: 900; color: white; text-align: center; padding: 5px 0; letter-spacing: 1px; }
+            .match-content { display: flex; padding: 8px; align-items: center; gap: 8px; }
+            .teams-container { flex-grow: 1; display: flex; flex-direction: column; gap: 5px; }
+            
+            .team-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #f8fafc; border-radius: 5px; }
+            
+            .team-name { font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 4px; color: #1e293b; max-width: 130px; }
+            .flag-icon { font-size: 16px; margin-right: 2px; }
+            .truncate-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .team-score { font-size: 14px; font-weight: 900; color: #0f172a; font-family: monospace; }
+
+            .card-blue .match-stage { background: #2563eb; } .card-blue { border-color: #93c5fd; }
+            .card-green .match-stage { background: #16a34a; } .card-green { border-color: #86efac; background: #f0fdf4; }
+            .card-gold .match-stage { background: #d97706; } .card-gold { border-color: #fef08a; background: #fffbeb; }
+            .card-bronze .match-stage { background: #ea580c; } .card-bronze { border-color: #fdba74; background: #fff7ed; }
+          }
+        `;
+        
+        // Injetar o CSS no HEAD é a forma mais segura do Mundo
+        document.head.appendChild(style);
+        document.body.appendChild(printContainer);
+
+        window.print();
+
+        setTimeout(() => {
+            document.body.removeChild(printContainer);
+            document.head.removeChild(style);
         }, 1000);
     };
   </script>
