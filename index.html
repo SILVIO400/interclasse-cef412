@@ -4417,9 +4417,8 @@
             document.head.removeChild(style);
         }, 1000);
     };
-    // --- FUNÇÃO: LIVRETO DE TODAS AS TURMAS (UMA POR PÁGINA) ---
+    // --- FUNÇÃO: LIVRETO DE TODAS AS TURMAS (UMA POR PÁGINA) COM ESCALA DINÂMICA ---
     window.printRelatorioTodasTurmas = function() {
-        // Pega todas as turmas do turno atual e organiza em ordem alfabética
         const shiftTurmas = state.turmas.filter(t => t.shift === activeShift).sort((a, b) => a.name.localeCompare(b.name));
         const shiftModalidades = state.modalidades.filter(m => m.shift === activeShift);
 
@@ -4430,7 +4429,7 @@
 
         let reportHTML = '';
 
-        // Paleta de cores baseada na cor temática da turma
+        // Paleta de cores
         const colorThemes = {
             indigo:  { bg: '#4f46e5', border: '#c7d2fe', text: '#ffffff', highlight: '#3730a3' },
             emerald: { bg: '#10b981', border: '#a7f3d0', text: '#ffffff', highlight: '#047857' },
@@ -4445,85 +4444,124 @@
             const theme = colorThemes[turma.color] || colorThemes.default;
             const flagHTML = getCountryFlagHTML(turma.country);
 
-            // O 'page-break-after: always' é o responsável por forçar cada turma em uma nova folha
-            reportHTML += `
-                <div class="print-page" style="page-break-after: always; width: 210mm; min-height: 296mm; padding: 12mm; box-sizing: border-box; background: #ffffff; font-family: 'Inter', sans-serif; position: relative;">
-                    
-                    <div style="background: ${theme.bg}; color: ${theme.text}; padding: 16px; border-radius: 12px; border-bottom: 4px solid ${theme.highlight}; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between;">
-                        
-                        <div style="flex-grow: 1;">
-                            <h1 style="font-size: 28px; font-weight: 900; margin: 0; text-transform: uppercase; display: flex; align-items: center; gap: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
-                                <span style="font-size: 32px; background: white; border-radius: 8px; padding: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); line-height: 1;">${flagHTML}</span>
-                                ${turma.name}
-                            </h1>
-                            <p style="font-size: 12px; font-weight: 700; margin: 6px 0 0 0; opacity: 0.95; letter-spacing: 0.5px; text-transform: uppercase;">
-                                Delegação CEF 412 - Turno ${activeShift}
-                            </p>
-                            <p style="font-size: 11px; font-weight: 600; margin: 4px 0 0 0; opacity: 0.9;">
-                                Prof. Conselheiro: <strong>${turma.advisor || 'N/A'}</strong> | País: <strong>${turma.country || 'N/A'}</strong>
-                            </p>
-                        </div>
-                        
-                        <div style="text-align: right; font-size: 10px; font-weight: bold; opacity: 0.9; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 8px;">
-                            <i class="fa-regular fa-calendar-days" style="margin-right: 4px;"></i> Emissão<br><span style="font-size: 12px;">${dataEmissao}</span>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: start; padding-bottom: 40px;">
-            `;
-
-            shiftModalidades.forEach(mod => {
-                // Filtra os atletas daquela turma matriculados naquela modalidade
+            // Mapeia TODAS as modalidades e conta o total de alunos na turma
+            let totalAtletasTurma = 0;
+            const modalidadesData = shiftModalidades.map(mod => {
                 const atletas = state.alunos
                     .filter(a => a.classId === turma.id && a.sports && a.sports.includes(mod.id))
                     .sort((a, b) => {
-                        // Meninas (F) primeiro, e ordem alfabética
                         if (a.gender === 'F' && b.gender !== 'F') return -1;
                         if (a.gender !== 'F' && b.gender === 'F') return 1;
                         return a.name.localeCompare(b.name);
                     });
+                totalAtletasTurma += atletas.length;
+                return { mod, atletas };
+            });
 
-                reportHTML += `
-                    <div style="border: 2px solid #f1f5f9; border-radius: 10px; overflow: hidden;">
-                        <div style="background: #f8fafc; padding: 8px 12px; border-bottom: 2px solid #e2e8f0; display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 16px;">${mod.icon || '🏆'}</span>
-                            <h3 style="margin: 0; font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase;">${mod.name}</h3>
-                            <span style="margin-left: auto; background: ${theme.bg}; color: white; font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: bold;">
-                                ${atletas.length}
-                            </span>
+            // Se a turma não tiver NENHUM atleta no total do evento, pula ela.
+            if (totalAtletasTurma === 0) return; 
+
+            // Lógica de Escala Dinâmica (Calcula o espaço considerando TODAS as modalidades)
+            const totalMods = shiftModalidades.length;
+
+            // Valores para caber as modalidades com e sem alunos
+            let gridCols = 3;
+            let gap = '8px';
+            let studentSize = '9px';
+            let studentPad = '2px 4px';
+            let modTitleSize = '11px';
+            let headerPadding = '12px';
+            let marginBottom = '12px';
+
+            // Se o evento tiver muitas modalidades cadastradas (mais de 12) ou muitos alunos
+            if (totalMods > 12 || totalAtletasTurma > 40) {
+                gridCols = 4;
+                gap = '6px';
+                studentSize = '8px';
+                studentPad = '1px 3px';
+                modTitleSize = '10px';
+                headerPadding = '8px';
+                marginBottom = '8px';
+            }
+
+            // O 'page-break-after: always' e 'height: 296mm' garantem rigorosamente UMA folha física.
+            reportHTML += `
+                <div class="print-page" style="page-break-after: always; width: 210mm; height: 296mm; overflow: hidden; padding: 10mm; box-sizing: border-box; background: #ffffff; font-family: 'Inter', sans-serif; position: relative; display: flex; flex-direction: column;">
+                    
+                    <div style="background: ${theme.bg}; color: ${theme.text}; padding: ${headerPadding}; border-radius: 12px; border-bottom: 4px solid ${theme.highlight}; margin-bottom: ${marginBottom}; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+                        
+                        <div style="flex-grow: 1;">
+                            <h1 style="font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase; display: flex; align-items: center; gap: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
+                                <span style="font-size: 28px; background: white; border-radius: 8px; padding: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); line-height: 1;">${flagHTML}</span>
+                                ${turma.name}
+                            </h1>
+                            <p style="font-size: 11px; font-weight: 700; margin: 4px 0 0 0; opacity: 0.95; letter-spacing: 0.5px; text-transform: uppercase;">
+                                Delegação CEF 412 - Turno ${activeShift}
+                            </p>
+                            <p style="font-size: 10px; font-weight: 600; margin: 2px 0 0 0; opacity: 0.9;">
+                                Prof. Conselheiro: <strong>${turma.advisor || 'N/A'}</strong> | País: <strong>${turma.country || 'N/A'}</strong>
+                            </p>
                         </div>
-                        <div style="padding: 8px;">
-                `;
+                        
+                        <div style="text-align: right; font-size: 9px; font-weight: bold; opacity: 0.9; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 8px;">
+                            <i class="fa-regular fa-calendar-days" style="margin-right: 4px;"></i> Emissão<br><span style="font-size: 11px;">${dataEmissao}</span>
+                        </div>
+                    </div>
 
+                    <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); gap: ${gap}; align-items: start; align-content: start; flex-grow: 1;">
+            `;
+
+            modalidadesData.forEach(({mod, atletas}) => {
+                
                 if (atletas.length === 0) {
+                    // CAIXA COMPACTA PARA MODALIDADES SEM ALUNOS (Efeito visual de "Em Falta")
                     reportHTML += `
-                        <div style="font-size: 10px; color: #94a3b8; text-align: center; font-style: italic; padding: 6px 0;">
-                            Nenhum atleta inscrito.
+                        <div style="border: 1px dashed #cbd5e1; border-radius: 6px; background: #f8fafc; padding: 6px 8px; display: flex; align-items: center; justify-content: space-between; opacity: 0.7;">
+                            <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+                                <span style="font-size: 12px; filter: grayscale(100%); opacity: 0.6;">${mod.icon || '🏆'}</span>
+                                <h3 style="margin: 0; font-size: ${parseInt(modTitleSize)-1}px; font-weight: 700; color: #64748b; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${mod.name}</h3>
+                            </div>
+                            <span style="margin-left: 6px; font-size: 8px; color: #ef4444; font-weight: 900; background: #fee2e2; padding: 2px 4px; border-radius: 4px; white-space: nowrap; border: 1px solid #f87171;">
+                                0
+                            </span>
                         </div>
                     `;
                 } else {
-                    reportHTML += `<ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 3px;">`;
+                    // CAIXA NORMAL PARA MODALIDADES COM ALUNOS
+                    reportHTML += `
+                        <div style="border: 2px solid #f1f5f9; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                            <div style="background: #f8fafc; padding: 6px 8px; border-bottom: 2px solid #e2e8f0; display: flex; align-items: center; gap: 6px;">
+                                <span style="font-size: 14px;">${mod.icon || '🏆'}</span>
+                                <h3 style="margin: 0; font-size: ${modTitleSize}; font-weight: 800; color: #1e293b; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${mod.name}</h3>
+                                <span style="margin-left: auto; background: ${theme.bg}; color: white; font-size: 8px; padding: 2px 5px; border-radius: 8px; font-weight: bold;">
+                                    ${atletas.length}
+                                </span>
+                            </div>
+                            <div style="padding: 4px;">
+                                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px;">
+                    `;
+
                     atletas.forEach((a, i) => {
                         reportHTML += `
-                            <li style="font-size: 10.5px; font-weight: 700; color: #334155; padding: 4px 8px; background: ${i % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-radius: 4px; display: flex; align-items: center;">
-                                <span style="color: ${theme.bg}; margin-right: 6px; font-size: 14px; line-height: 0;">•</span> 
-                                ${a.name}
+                            <li style="font-size: ${studentSize}; font-weight: 700; color: #334155; padding: ${studentPad}; background: ${i % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-radius: 4px; display: flex; align-items: center; border: 1px solid ${i % 2 === 0 ? 'transparent' : '#f1f5f9'};">
+                                <span style="color: ${theme.bg}; margin-right: 4px; font-size: 10px; line-height: 0;">•</span> 
+                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${a.name}</span>
                             </li>
                         `;
                     });
-                    reportHTML += `</ul>`;
-                }
 
-                reportHTML += `
+                    reportHTML += `
+                                </ul>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             });
 
             reportHTML += `
                     </div>
                     
-                    <div style="position: absolute; bottom: 12mm; left: 12mm; right: 12mm; text-align: center; font-size: 10px; color: #94a3b8; font-weight: bold; border-top: 2px solid #f1f5f9; padding-top: 8px;">
+                    <div style="position: absolute; bottom: 8mm; left: 10mm; right: 10mm; text-align: center; font-size: 9px; color: #94a3b8; font-weight: bold; border-top: 2px solid #f1f5f9; padding-top: 6px; flex-shrink: 0;">
                         Portal Interativo CEF 412 • Livreto Oficial de Delegações
                     </div>
                 </div>
