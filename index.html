@@ -3930,11 +3930,9 @@
     
     // Inicialização da Aplicação
     initApp();
-    // --- FUNÇÃO PARA IMPRESSÃO DO RELATÓRIO DE MODALIDADES (4x4 BLINDADO) ---
+    // --- FUNÇÃO PARA IMPRESSÃO DO RELATÓRIO DE MODALIDADES (MURAL ATRAENTE) ---
     window.printRelatorioModalidades = function() {
-        const shiftTurmas = state.turmas.filter(t => t.shift === activeShift)
-            .sort((a, b) => a.name.localeCompare(b.name));
-            
+        const shiftTurmas = state.turmas.filter(t => t.shift === activeShift).sort((a, b) => a.name.localeCompare(b.name));
         const shiftModalidades = state.modalidades.filter(m => m.shift === activeShift);
 
         if (shiftModalidades.length === 0) {
@@ -3944,72 +3942,104 @@
 
         let reportHTML = '';
 
-        // 2. Cria uma página A4 travada para CADA modalidade
-        shiftModalidades.forEach((mod, index) => {
+        // Paleta de cores vibrantes baseada na cor temática da turma
+        const colorThemes = {
+            indigo:  { bg: '#4f46e5', border: '#c7d2fe', text: '#ffffff', highlight: '#3730a3' },
+            emerald: { bg: '#10b981', border: '#a7f3d0', text: '#ffffff', highlight: '#047857' },
+            amber:   { bg: '#f59e0b', border: '#fde68a', text: '#ffffff', highlight: '#b45309' },
+            rose:    { bg: '#e11d48', border: '#fecdd3', text: '#ffffff', highlight: '#9f1239' },
+            default: { bg: '#334155', border: '#cbd5e1', text: '#ffffff', highlight: '#0f172a' }
+        };
+
+        shiftModalidades.forEach((mod) => {
+            // Filtra apenas as turmas que realmente têm alunos inscritos nesta modalidade específica
+            const turmasToRender = shiftTurmas.filter(t => {
+                return state.alunos.some(a => a.classId === t.id && a.sports && a.sports.includes(mod.id));
+            });
+
+            // Se não houver nenhum atleta inscrito em nenhuma turma nesta modalidade, pula a página
+            if(turmasToRender.length === 0) return;
+
             reportHTML += `
-                <div class="print-page" style="page-break-after: always; width: 210mm; height: 296mm; padding: 8mm; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; background: white; margin: 0 auto;">
+                <div class="print-page" style="page-break-after: always; width: 210mm; min-height: 296mm; padding: 12mm; box-sizing: border-box; background: #f8fafc; font-family: 'Inter', sans-serif; position: relative;">
                     
-                    <div style="text-align: center; margin-bottom: 8px; flex-shrink: 0;">
-                        <h1 style="font-size: 20px; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            ${mod.icon || '🏆'} ${mod.name}
+                    <!-- Cabeçalho Principal da Modalidade -->
+                    <div style="text-align: center; margin-bottom: 25px; border-bottom: 4px solid #0f172a; padding-bottom: 15px;">
+                        <h1 style="font-size: 32px; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; letter-spacing: -1px; display: flex; align-items: center; justify-content: center; gap: 12px;">
+                            <span style="background: #0f172a; color: #f59e0b; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 28px; box-shadow: 0 4px 6px rgba(0,0,0,0.15);">
+                                ${mod.icon || '🏆'}
+                            </span> 
+                            ${mod.name}
                         </h1>
-                        <div style="width: 40px; height: 3px; background: #3b82f6; margin: 2px auto; border-radius: 2px;"></div>
-                        <p style="font-size: 8px; font-weight: 800; color: #64748b; margin-top: 2px; text-transform: uppercase; letter-spacing: 1px;">
-                            Jogos Interclasse CEF 412 (2026) - Relatório de Equipes - ${activeShift}
+                        <p style="font-size: 14px; font-weight: 800; color: #64748b; margin: 8px 0 0 0; text-transform: uppercase; letter-spacing: 2px;">
+                            Lista Oficial de Equipes • CEF 412 • Turno ${activeShift}
                         </p>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 6px; flex-grow: 1; min-height: 0;">
+                    <!-- Grid de Turmas (Cards) -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: start;">
             `;
 
-            // Limita a 16 turmas para garantir que não quebra o layout 4x4
-            const turmasToRender = shiftTurmas.slice(0, 16);
-
-            // 3. Monta os Cards das Turmas
             turmasToRender.forEach(t => {
-                const atletas = state.alunos.filter(a => a.classId === t.id && a.sports && a.sports.includes(mod.id));
-                
-                // CORREÇÃO: Traz a bandeira nativa para o cabeçalho do PDF
-                const flagHTML = getCountryFlagHTML(t.country); 
+                // Filtra os atletas, ordena primeiro por gênero (Meninas primeiro) e depois por ordem alfabética
+                const atletas = state.alunos
+                    .filter(a => a.classId === t.id && a.sports && a.sports.includes(mod.id))
+                    .sort((a, b) => {
+                        // Ordenação por gênero: 'F' vem antes de 'M'
+                        if (a.gender === 'F' && b.gender !== 'F') return -1;
+                        if (a.gender !== 'F' && b.gender === 'F') return 1;
+                        // Se for do mesmo gênero, ordena alfabeticamente pelo nome
+                        return a.name.localeCompare(b.name);
+                    });
 
-                // Se houver mais de 8 atletas, divide em 2 colunas dentro da caixinha para economizar altura!
-                const numColunas = atletas.length > 8 ? 2 : 1;
+                const theme = colorThemes[t.color] || colorThemes.default;
+                const flagHTML = getCountryFlagHTML(t.country);
 
                 reportHTML += `
-                    <div style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; background: #f8fafc; box-shadow: inset 0 0 0 1px rgba(255,255,255,1);">
+                    <!-- Card da Equipe -->
+                    <div style="background: #ffffff; border: 2px solid ${theme.border}; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.08); display: flex; flex-direction: column;">
                         
-                        <div style="background: #1e293b; color: #ffffff; padding: 3px; font-size: 10px; font-weight: 900; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; text-transform: uppercase; border-bottom: 2px solid #3b82f6;">
-                            ${flagHTML} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.name}</span>
+                        <!-- Header do Card -->
+                        <div style="background: ${theme.bg}; color: ${theme.text}; padding: 10px 6px; text-align: center; border-bottom: 4px solid ${theme.highlight};">
+                            <div style="font-size: 14px; font-weight: 900; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 6px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
+                                <span style="font-size: 16px;">${flagHTML}</span> 
+                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.name}</span>
+                            </div>
+                            <div style="font-size: 9px; font-weight: 700; opacity: 0.95; margin-top: 5px; background: rgba(0,0,0,0.25); border-radius: 4px; padding: 2px 6px; display: inline-block; letter-spacing: 0.5px;">
+                                PROF: ${t.advisor || 'N/A'}
+                            </div>
                         </div>
-                        
-                        <div style="padding: 4px; flex-grow: 1; overflow: hidden; background: #ffffff;">
-                            ${atletas.length > 0 ? `
-                                <ul style="list-style-type: none; margin: 0; padding: 0; font-size: 7.5px; line-height: 1.2; font-weight: 600; color: #334155; column-count: ${numColunas}; column-gap: 6px;">
-                                    ${atletas.map(a => `
-                                        <li style="padding: 1px 0; border-bottom: 1px dashed #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                            <span style="color:#3b82f6; font-size: 6px; margin-right: 2px;">▶</span>${a.name}
-                                        </li>
-                                    `).join('')}
-                                </ul>
-                            ` : `
-                                <div style="font-size: 8px; color: #94a3b8; text-align: center; height: 100%; display: flex; align-items: center; justify-content: center; font-style: italic; font-weight: 500;">
-                                    Nenhuma inscrição
-                                </div>
-                            `}
+
+                        <!-- Lista de Atletas -->
+                        <div style="padding: 6px; flex-grow: 1;">
+                            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px;">
+                                ${atletas.map((a, i) => `
+                                    <li style="font-size: 10.5px; font-weight: 700; color: #1e293b; padding: 4px 6px; background: ${i % 2 === 0 ? '#f8fafc' : '#ffffff'}; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid ${i % 2 === 0 ? '#f1f5f9' : 'transparent'};">
+                                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${a.name}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
                         </div>
-                        
-                        <div style="background: #e2e8f0; font-size: 6.5px; text-align: center; padding: 2px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 1px; border-top: 1px solid #cbd5e1;">
-                            ${atletas.length} Atletas
+
+                        <!-- Footer do Card -->
+                        <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 8px; text-align: center; font-size: 10px; font-weight: 900; color: #64748b;">
+                            <span style="color: ${theme.highlight}; font-size: 12px; background: ${theme.border}; padding: 2px 6px; border-radius: 4px; margin-right: 4px;">${atletas.length}</span> CONVOCADOS
                         </div>
                     </div>
                 `;
             });
 
             reportHTML += `
-                    </div> </div> `;
+                    </div>
+                </div>
+            `;
         });
 
-        // 4. Injeção Temporária e Impressão
+        if (reportHTML === '') {
+            alert("Nenhum atleta inscrito nas modalidades deste turno. Cadastre alunos para gerar o mural.");
+            return;
+        }
+
         const printContainer = document.createElement('div');
         printContainer.innerHTML = reportHTML;
         
@@ -4017,9 +4047,9 @@
         style.innerHTML = `
           @media print {
             body > *:not(.print-temp-container) { display: none !important; }
-            .print-temp-container { display: block !important; position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 0; background: white; }
+            /* O print-color-adjust é essencial para forçar o navegador a imprimir os fundos coloridos */
+            .print-temp-container { display: block !important; position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .print-temp-container * { visibility: visible; }
-            /* Zera margens do Chrome e trava o papel no A4 */
             @page { margin: 0; size: A4 portrait; }
           }
         `;
@@ -4030,7 +4060,6 @@
 
         window.print();
 
-        // 5. Limpeza pós-impressão
         setTimeout(() => {
             document.body.removeChild(printContainer);
             document.body.removeChild(style);
