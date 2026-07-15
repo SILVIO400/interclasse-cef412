@@ -1459,6 +1459,10 @@
                   <button onclick="window.printRelatorioModalidades()" class="bg-amber-500 hover:bg-amber-400 font-extrabold text-xs py-2 px-3 rounded-xl flex items-center gap-1.5 shadow-lg text-slate-900 transition-colors">
                     <i class="fa-solid fa-file-pdf"></i> Relatório Geral (Mural)
                   </button>
+                  <button onclick="window.printRelatorioTodasTurmas()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 shadow-md transition-all text-xs border border-indigo-400/50">
+                   <i class="fa-solid fa-file-pdf"></i>
+                   Livreto Completo de Turmas
+                  </button>
                   <button onclick="window.openTurmaModal()" class="bg-indigo-600 hover:bg-indigo-500 font-bold text-xs py-2 px-3 rounded-xl flex items-center gap-1.5 shadow text-white transition-colors">
                     <i class="fa-solid fa-plus"></i> Adicionar Turma
                   </button>
@@ -4411,6 +4415,144 @@
         setTimeout(() => {
             document.body.removeChild(printContainer);
             document.head.removeChild(style);
+        }, 1000);
+    };
+    // --- FUNÇÃO: LIVRETO DE TODAS AS TURMAS (UMA POR PÁGINA) ---
+    window.printRelatorioTodasTurmas = function() {
+        // Pega todas as turmas do turno atual e organiza em ordem alfabética
+        const shiftTurmas = state.turmas.filter(t => t.shift === activeShift).sort((a, b) => a.name.localeCompare(b.name));
+        const shiftModalidades = state.modalidades.filter(m => m.shift === activeShift);
+
+        if (shiftTurmas.length === 0) {
+            alert("Nenhuma turma cadastrada para este turno.");
+            return;
+        }
+
+        let reportHTML = '';
+
+        // Paleta de cores baseada na cor temática da turma
+        const colorThemes = {
+            indigo:  { bg: '#4f46e5', border: '#c7d2fe', text: '#ffffff', highlight: '#3730a3' },
+            emerald: { bg: '#10b981', border: '#a7f3d0', text: '#ffffff', highlight: '#047857' },
+            amber:   { bg: '#f59e0b', border: '#fde68a', text: '#ffffff', highlight: '#b45309' },
+            rose:    { bg: '#e11d48', border: '#fecdd3', text: '#ffffff', highlight: '#9f1239' },
+            default: { bg: '#334155', border: '#cbd5e1', text: '#ffffff', highlight: '#0f172a' }
+        };
+
+        const dataEmissao = new Date().toLocaleDateString('pt-BR');
+
+        shiftTurmas.forEach((turma) => {
+            const theme = colorThemes[turma.color] || colorThemes.default;
+            const flagHTML = getCountryFlagHTML(turma.country);
+
+            // O 'page-break-after: always' é o responsável por forçar cada turma em uma nova folha
+            reportHTML += `
+                <div class="print-page" style="page-break-after: always; width: 210mm; min-height: 296mm; padding: 12mm; box-sizing: border-box; background: #ffffff; font-family: 'Inter', sans-serif; position: relative;">
+                    
+                    <div style="background: ${theme.bg}; color: ${theme.text}; padding: 16px; border-radius: 12px; border-bottom: 4px solid ${theme.highlight}; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between;">
+                        
+                        <div style="flex-grow: 1;">
+                            <h1 style="font-size: 28px; font-weight: 900; margin: 0; text-transform: uppercase; display: flex; align-items: center; gap: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
+                                <span style="font-size: 32px; background: white; border-radius: 8px; padding: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); line-height: 1;">${flagHTML}</span>
+                                ${turma.name}
+                            </h1>
+                            <p style="font-size: 12px; font-weight: 700; margin: 6px 0 0 0; opacity: 0.95; letter-spacing: 0.5px; text-transform: uppercase;">
+                                Delegação CEF 412 - Turno ${activeShift}
+                            </p>
+                            <p style="font-size: 11px; font-weight: 600; margin: 4px 0 0 0; opacity: 0.9;">
+                                Prof. Conselheiro: <strong>${turma.advisor || 'N/A'}</strong> | País: <strong>${turma.country || 'N/A'}</strong>
+                            </p>
+                        </div>
+                        
+                        <div style="text-align: right; font-size: 10px; font-weight: bold; opacity: 0.9; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 8px;">
+                            <i class="fa-regular fa-calendar-days" style="margin-right: 4px;"></i> Emissão<br><span style="font-size: 12px;">${dataEmissao}</span>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: start; padding-bottom: 40px;">
+            `;
+
+            shiftModalidades.forEach(mod => {
+                // Filtra os atletas daquela turma matriculados naquela modalidade
+                const atletas = state.alunos
+                    .filter(a => a.classId === turma.id && a.sports && a.sports.includes(mod.id))
+                    .sort((a, b) => {
+                        // Meninas (F) primeiro, e ordem alfabética
+                        if (a.gender === 'F' && b.gender !== 'F') return -1;
+                        if (a.gender !== 'F' && b.gender === 'F') return 1;
+                        return a.name.localeCompare(b.name);
+                    });
+
+                reportHTML += `
+                    <div style="border: 2px solid #f1f5f9; border-radius: 10px; overflow: hidden;">
+                        <div style="background: #f8fafc; padding: 8px 12px; border-bottom: 2px solid #e2e8f0; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 16px;">${mod.icon || '🏆'}</span>
+                            <h3 style="margin: 0; font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase;">${mod.name}</h3>
+                            <span style="margin-left: auto; background: ${theme.bg}; color: white; font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: bold;">
+                                ${atletas.length}
+                            </span>
+                        </div>
+                        <div style="padding: 8px;">
+                `;
+
+                if (atletas.length === 0) {
+                    reportHTML += `
+                        <div style="font-size: 10px; color: #94a3b8; text-align: center; font-style: italic; padding: 6px 0;">
+                            Nenhum atleta inscrito.
+                        </div>
+                    `;
+                } else {
+                    reportHTML += `<ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 3px;">`;
+                    atletas.forEach((a, i) => {
+                        reportHTML += `
+                            <li style="font-size: 10.5px; font-weight: 700; color: #334155; padding: 4px 8px; background: ${i % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-radius: 4px; display: flex; align-items: center;">
+                                <span style="color: ${theme.bg}; margin-right: 6px; font-size: 14px; line-height: 0;">•</span> 
+                                ${a.name}
+                            </li>
+                        `;
+                    });
+                    reportHTML += `</ul>`;
+                }
+
+                reportHTML += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            reportHTML += `
+                    </div>
+                    
+                    <div style="position: absolute; bottom: 12mm; left: 12mm; right: 12mm; text-align: center; font-size: 10px; color: #94a3b8; font-weight: bold; border-top: 2px solid #f1f5f9; padding-top: 8px;">
+                        Portal Interativo CEF 412 • Livreto Oficial de Delegações
+                    </div>
+                </div>
+            `;
+        });
+
+        const printContainer = document.createElement('div');
+        printContainer.innerHTML = reportHTML;
+        
+        const style = document.createElement('style');
+        style.innerHTML = `
+          @media print {
+            body > *:not(.print-temp-container) { display: none !important; }
+            html, body { min-width: 210mm !important; margin: 0 !important; padding: 0 !important; background: white !important; }
+            .print-temp-container { display: block !important; position: absolute; top: 0; left: 0; width: 210mm !important; margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .print-temp-container * { visibility: visible; }
+            @page { margin: 0; size: A4 portrait; }
+          }
+        `;
+        
+        printContainer.classList.add('print-temp-container');
+        document.body.appendChild(style);
+        document.body.appendChild(printContainer);
+
+        window.print();
+
+        setTimeout(() => {
+            document.body.removeChild(printContainer);
+            document.body.removeChild(style);
         }, 1000);
     };
   </script>
