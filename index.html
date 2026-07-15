@@ -3957,38 +3957,77 @@
                 return state.alunos.some(a => a.classId === t.id && a.sports && a.sports.includes(mod.id));
             });
 
-            // Se não houver nenhum atleta inscrito em nenhuma turma nesta modalidade, pula a página
+            // Se não houver nenhum atleta inscrito, pula a página
             if(turmasToRender.length === 0) return;
 
+            // --- LÓGICA DE ESCALA DINÂMICA (MÁGICA PARA CABER EM 1 PÁGINA) ---
+            const totalClasses = turmasToRender.length;
+            
+            // Valores padrão (para modalidades com poucas turmas: até 8)
+            let gridCols = 4;
+            let titleSize = '28px';
+            let iconSize = '42px';
+            let gap = '12px';
+            let cardHeadPad = '8px 4px';
+            let studentSize = '10.5px';
+            let studentPad = '3px 6px';
+
+            // Ajuste médio (9 a 12 turmas)
+            if (totalClasses > 8 && totalClasses <= 12) {
+                gridCols = 4;
+                titleSize = '26px';
+                iconSize = '38px';
+                gap = '8px';
+                studentSize = '9.5px';
+                studentPad = '2px 4px';
+            } 
+            // Ajuste extremo (13 a 16 turmas - Ex: Futsal e Queimada)
+            else if (totalClasses > 12 && totalClasses <= 16) {
+                gridCols = 5;
+                titleSize = '22px';
+                iconSize = '34px';
+                gap = '6px';
+                cardHeadPad = '6px 2px';
+                studentSize = '8.5px';
+                studentPad = '1px 3px';
+            } 
+            // Ajuste máximo (Mais de 16 turmas)
+            else if (totalClasses > 16) {
+                gridCols = 6;
+                titleSize = '20px';
+                iconSize = '30px';
+                gap = '4px';
+                cardHeadPad = '4px 2px';
+                studentSize = '8px';
+                studentPad = '1px 2px';
+            }
+
+            // Repare na propriedade "height: 296mm" e "overflow: hidden", elas forçam a ser 1 folha física apenas.
             reportHTML += `
-                <div class="print-page" style="page-break-after: always; width: 210mm; min-height: 296mm; padding: 12mm; box-sizing: border-box; background: #f8fafc; font-family: 'Inter', sans-serif; position: relative;">
+                <div class="print-page" style="page-break-after: always; width: 210mm; height: 296mm; overflow: hidden; padding: 8mm; box-sizing: border-box; background: #f8fafc; font-family: 'Inter', sans-serif; position: relative; display: flex; flex-direction: column;">
                     
-                    <!-- Cabeçalho Principal da Modalidade -->
-                    <div style="text-align: center; margin-bottom: 25px; border-bottom: 4px solid #0f172a; padding-bottom: 15px;">
-                        <h1 style="font-size: 32px; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; letter-spacing: -1px; display: flex; align-items: center; justify-content: center; gap: 12px;">
-                            <span style="background: #0f172a; color: #f59e0b; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 28px; box-shadow: 0 4px 6px rgba(0,0,0,0.15);">
+                    <div style="text-align: center; margin-bottom: 12px; border-bottom: 3px solid #0f172a; padding-bottom: 8px; flex-shrink: 0;">
+                        <h1 style="font-size: ${titleSize}; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; letter-spacing: -1px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <span style="background: #0f172a; color: #f59e0b; width: ${iconSize}; height: ${iconSize}; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: calc(${iconSize} * 0.6); box-shadow: 0 4px 6px rgba(0,0,0,0.15);">
                                 ${mod.icon || '🏆'}
                             </span> 
                             ${mod.name}
                         </h1>
-                        <p style="font-size: 14px; font-weight: 800; color: #64748b; margin: 8px 0 0 0; text-transform: uppercase; letter-spacing: 2px;">
+                        <p style="font-size: 11px; font-weight: 800; color: #64748b; margin: 4px 0 0 0; text-transform: uppercase; letter-spacing: 2px;">
                             Lista Oficial de Equipes • CEF 412 • Turno ${activeShift}
                         </p>
                     </div>
 
-                    <!-- Grid de Turmas (Cards) -->
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: start;">
+                    <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); gap: ${gap}; align-items: start; flex-grow: 1;">
             `;
 
             turmasToRender.forEach(t => {
-                // Filtra os atletas, ordena primeiro por gênero (Meninas primeiro) e depois por ordem alfabética
+                // Mantida a regra: Meninas (F) primeiro, depois Meninos, seguido por ordem alfabética
                 const atletas = state.alunos
                     .filter(a => a.classId === t.id && a.sports && a.sports.includes(mod.id))
                     .sort((a, b) => {
-                        // Ordenação por gênero: 'F' vem antes de 'M'
                         if (a.gender === 'F' && b.gender !== 'F') return -1;
                         if (a.gender !== 'F' && b.gender === 'F') return 1;
-                        // Se for do mesmo gênero, ordena alfabeticamente pelo nome
                         return a.name.localeCompare(b.name);
                     });
 
@@ -3996,34 +4035,30 @@
                 const flagHTML = getCountryFlagHTML(t.country);
 
                 reportHTML += `
-                    <!-- Card da Equipe -->
-                    <div style="background: #ffffff; border: 2px solid ${theme.border}; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.08); display: flex; flex-direction: column;">
+                    <div style="background: #ffffff; border: 2px solid ${theme.border}; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.06); display: flex; flex-direction: column;">
                         
-                        <!-- Header do Card -->
-                        <div style="background: ${theme.bg}; color: ${theme.text}; padding: 10px 6px; text-align: center; border-bottom: 4px solid ${theme.highlight};">
-                            <div style="font-size: 14px; font-weight: 900; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 6px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
-                                <span style="font-size: 16px;">${flagHTML}</span> 
+                        <div style="background: ${theme.bg}; color: ${theme.text}; padding: ${cardHeadPad}; text-align: center; border-bottom: 3px solid ${theme.highlight};">
+                            <div style="font-size: 12px; font-weight: 900; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 4px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
+                                <span style="font-size: 13px;">${flagHTML}</span> 
                                 <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.name}</span>
                             </div>
-                            <div style="font-size: 9px; font-weight: 700; opacity: 0.95; margin-top: 5px; background: rgba(0,0,0,0.25); border-radius: 4px; padding: 2px 6px; display: inline-block; letter-spacing: 0.5px;">
+                            <div style="font-size: 8px; font-weight: 700; opacity: 0.95; margin-top: 3px; background: rgba(0,0,0,0.25); border-radius: 4px; padding: 2px 4px; display: inline-block; letter-spacing: 0.5px;">
                                 PROF: ${t.advisor || 'N/A'}
                             </div>
                         </div>
 
-                        <!-- Lista de Atletas -->
-                        <div style="padding: 6px; flex-grow: 1;">
-                            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="padding: 4px; flex-grow: 1;">
+                            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px;">
                                 ${atletas.map((a, i) => `
-                                    <li style="font-size: 10.5px; font-weight: 700; color: #1e293b; padding: 4px 6px; background: ${i % 2 === 0 ? '#f8fafc' : '#ffffff'}; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid ${i % 2 === 0 ? '#f1f5f9' : 'transparent'};">
+                                    <li style="font-size: ${studentSize}; font-weight: 700; color: #1e293b; padding: ${studentPad}; background: ${i % 2 === 0 ? '#f8fafc' : '#ffffff'}; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border: 1px solid ${i % 2 === 0 ? '#f1f5f9' : 'transparent'};">
                                         <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${a.name}</span>
                                     </li>
                                 `).join('')}
                             </ul>
                         </div>
 
-                        <!-- Footer do Card -->
-                        <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 8px; text-align: center; font-size: 10px; font-weight: 900; color: #64748b;">
-                            <span style="color: ${theme.highlight}; font-size: 12px; background: ${theme.border}; padding: 2px 6px; border-radius: 4px; margin-right: 4px;">${atletas.length}</span> CONVOCADOS
+                        <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 6px; text-align: center; font-size: 8px; font-weight: 900; color: #64748b;">
+                            <span style="color: ${theme.highlight}; font-size: 10px; background: ${theme.border}; padding: 1px 4px; border-radius: 3px; margin-right: 3px;">${atletas.length}</span> CONVOCADOS
                         </div>
                     </div>
                 `;
@@ -4047,7 +4082,6 @@
         style.innerHTML = `
           @media print {
             body > *:not(.print-temp-container) { display: none !important; }
-            /* O print-color-adjust é essencial para forçar o navegador a imprimir os fundos coloridos */
             .print-temp-container { display: block !important; position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .print-temp-container * { visibility: visible; }
             @page { margin: 0; size: A4 portrait; }
