@@ -1312,6 +1312,10 @@
                   <button onclick="window.exportMatchesCSV()" class="flex-1 bg-indigo-900/40 border border-indigo-700 text-indigo-300 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-900/60 transition-colors">
                     📊 Exportar CSV
                   </button>
+                  <input type="file" id="importCsvInput" accept=".csv" style="display: none;" onchange="window.importMatchesCSV(event)">
+                  <button onclick="document.getElementById('importCsvInput').click()" class="flex-1 bg-emerald-900/40 border border-emerald-700 text-emerald-300 py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-900/60 transition-colors">
+                    📥 Importar Horários
+                  </button>
                 ` : ''}
               </div>
             </div>
@@ -4733,6 +4737,74 @@
             document.body.removeChild(style);
         }, 1000);
     }
+    // ============================================================================
+    // 4. FUNÇÃO: IMPORTAR CSV COM DATAS E HORÁRIOS DOS JOGOS (VERSÃO CORRIGIDA)
+    // ============================================================================
+    window.importMatchesCSV = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            try {
+                const text = e.target.result;
+                
+                // Detecta automaticamente se o Excel usou ponto e vírgula (;) ou vírgula (,)
+                const separador = text.indexOf(';') !== -1 ? ';' : ',';
+                const rows = text.split(/\r?\n/); 
+                let jogosAtualizados = 0;
+
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i].trim();
+                    if (!row) continue;
+
+                    const colunas = row.split(separador);
+                    
+                    if (colunas.length >= 9) { 
+                        const id = colunas[0].replace(/["\uFEFF]/g, '').trim();
+                        const data = colunas[7] ? colunas[7].replace(/["\uFEFF]/g, '').trim() : "";
+                        const horario = colunas[8] ? colunas[8].replace(/["\uFEFF]/g, '').trim() : "";
+                        const local = colunas[9] ? colunas[9].replace(/["\uFEFF]/g, '').trim() : "";
+
+                        // CORREÇÃO: Lendo a gaveta 'state.confrontos' (nome exato do seu sistema)
+                        if (typeof state !== 'undefined' && state.confrontos) {
+                            const jogoEncontrado = state.confrontos.find(m => m.id === id);
+                            
+                            if (jogoEncontrado) {
+                                let atualizou = false;
+                                
+                                // Atualiza apenas os campos que você preencheu no Excel
+                                if (data !== "") { jogoEncontrado.date = data; atualizou = true; }
+                                if (horario !== "") { jogoEncontrado.time = horario; atualizou = true; }
+                                if (local !== "") { jogoEncontrado.location = local; atualizou = true; }
+
+                                if (atualizou) jogosAtualizados++;
+                            }
+                        }
+                    }
+                }
+
+                // Salva na memória do sistema
+                if (typeof saveState === 'function') saveState();
+                else if (typeof saveData === 'function') saveData();
+                else if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+                // Atualiza a tela
+                if (typeof renderMatchesList === 'function') renderMatchesList();
+                
+                alert(`Mágica concluída! ${jogosAtualizados} jogos foram atualizados com sucesso.`);
+                
+            } catch (erro) {
+                alert("Ops, algo impediu a leitura do arquivo: " + erro.message);
+                console.error(erro);
+            }
+            
+            event.target.value = ''; 
+        };
+
+        reader.readAsText(file, 'UTF-8');
+    };
   </script>
 </body>
 </html>
